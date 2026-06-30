@@ -1,0 +1,975 @@
+# CIM API Design
+
+**Document Version:** 1.0
+**Status:** Draft
+**Last Updated:** 2026-06-30
+**Author:** Masato Nagata
+
+---
+
+# Revision History
+
+| Version | Date       | Description     |
+| ------- | ---------- | --------------- |
+| 1.0     | 2026-06-30 | Initial version |
+
+---
+
+# Table of Contents
+
+1. Purpose
+2. Scope
+3. References
+4. API Overview
+5. Common API Design
+6. Authentication API
+7. Project API
+8. Issue API
+9. AI Draft API
+10. Comment API
+11. Attachment API
+12. Error Response
+13. Authorization
+14. API Constraints
+15. Future Enhancements
+
+---
+
+# 1. Purpose
+
+本書は、CIM（Commissioning Issue Manager）のAPI設計を定義することを目的とする。
+
+本書では、FrontendとBackend間で利用するREST APIのエンドポイント、リクエスト、レスポンス、およびエラー仕様を定義する。
+
+---
+
+# 2. Scope
+
+本書では以下を対象とする。
+
+* REST API一覧
+* HTTP Method
+* Endpoint
+* Request
+* Response
+* Error Response
+* 認証・認可方針
+
+以下は対象外とする。
+
+* DBテーブル定義
+* Service実装
+* Repository実装
+* UI詳細設計
+* テストケース
+
+これらは各設計書で定義する。
+
+---
+
+# 3. References
+
+本書は以下のドキュメントを参照する。
+
+| ドキュメント                 | 説明                      |
+| ---------------------- | ----------------------- |
+| requirements.md        | 要件定義書                   |
+| basic_design.md        | 基本設計書                   |
+| database_design.md     | データベース設計書               |
+| project_conventions.md | プロジェクト共通ルール             |
+| ADR-001                | User in Control         |
+| ADR-002                | TargetType Definition   |
+| ADR-003                | Category Definition     |
+| ADR-005                | Issue as Aggregate Root |
+
+---
+
+# 4. API Overview
+
+初期版では以下のAPIを提供する。
+
+| 分類             | Method | Endpoint                                           | 概要           |
+| -------------- | ------ | -------------------------------------------------- | ------------ |
+| Authentication | POST   | /api/auth/login                                    | ログイン         |
+| Authentication | POST   | /api/auth/logout                                   | ログアウト        |
+| Authentication | GET    | /api/auth/me                                       | ログイン中ユーザー取得  |
+| Project        | GET    | /api/projects                                      | Project一覧取得  |
+| Issue          | GET    | /api/projects/{project_id}/issues                  | Issue一覧取得    |
+| Issue          | GET    | /api/issues/{issue_id}                             | Issue詳細取得    |
+| Issue          | POST   | /api/projects/{project_id}/issues                  | Issue登録      |
+| Issue          | PUT    | /api/issues/{issue_id}                             | Issue更新      |
+| Issue          | PATCH  | /api/issues/{issue_id}/status                      | Status変更     |
+| AI             | POST   | /api/ai/issue-draft                                | AI Draft生成   |
+| Comment        | POST   | /api/issues/{issue_id}/comments                    | Comment追加    |
+| Attachment     | POST   | /api/issues/{issue_id}/attachments                 | Attachment追加 |
+| Attachment     | DELETE | /api/issues/{issue_id}/attachments/{attachment_id} | Attachment削除 |
+
+---
+
+# 5. Common API Design
+
+## 5.1 Base URL
+
+すべてのAPIは以下のPrefixを持つ。
+
+```text
+/api
+```
+
+---
+
+## 5.2 Format
+
+リクエストおよびレスポンスは原則としてJSON形式とする。
+
+ただし、Attachment Uploadは `multipart/form-data` を利用する。
+
+---
+
+## 5.3 DateTime Format
+
+日時はISO 8601形式で返却する。
+
+```text
+2026-06-30T10:30:00
+```
+
+---
+
+## 5.4 Authentication
+
+認証が必要なAPIでは、認証済みユーザーのみアクセスできる。
+
+未認証の場合は `401 Unauthorized` を返す。
+
+---
+
+## 5.5 Authorization
+
+権限が不足している場合は `403 Forbidden` を返す。
+
+---
+
+## 5.6 Success Response
+
+成功時は、各APIで定義したJSONレスポンスを返す。
+
+---
+
+## 5.7 Error Response
+
+エラー時は共通エラーレスポンス形式を返す。
+
+詳細は「12. Error Response」で定義する。
+
+---
+
+# 6. Authentication API
+
+## 6.1 Login
+
+### Endpoint
+
+```http
+POST /api/auth/login
+```
+
+### Description
+
+利用者がログインする。
+
+### Request
+
+```json
+{
+  "username": "engineer1",
+  "password": "password"
+}
+```
+
+### Response
+
+```json
+{
+  "user": {
+    "id": 1,
+    "username": "engineer1",
+    "display_name": "Engineer 1",
+    "role": "ENGINEER"
+  }
+}
+```
+
+### Error
+
+| Status | 内容    |
+| ------ | ----- |
+| 400    | 入力値不正 |
+| 401    | 認証失敗  |
+
+---
+
+## 6.2 Logout
+
+### Endpoint
+
+```http
+POST /api/auth/logout
+```
+
+### Description
+
+利用者がログアウトする。
+
+### Response
+
+```json
+{
+  "message": "Logged out"
+}
+```
+
+### Error
+
+| Status | 内容  |
+| ------ | --- |
+| 401    | 未認証 |
+
+---
+
+## 6.3 Current User
+
+### Endpoint
+
+```http
+GET /api/auth/me
+```
+
+### Description
+
+ログイン中の利用者情報を取得する。
+
+### Response
+
+```json
+{
+  "id": 1,
+  "username": "engineer1",
+  "display_name": "Engineer 1",
+  "role": "ENGINEER"
+}
+```
+
+### Error
+
+| Status | 内容  |
+| ------ | --- |
+| 401    | 未認証 |
+
+---
+
+# 7. Project API
+
+## 7.1 Get Projects
+
+### Endpoint
+
+```http
+GET /api/projects
+```
+
+### Description
+
+Engineerが選択可能なProject一覧を取得する。
+
+### Response
+
+```json
+{
+  "projects": [
+    {
+      "id": 1,
+      "name": "Hotel A Commissioning",
+      "hotel": {
+        "id": 1,
+        "name": "Hotel A"
+      }
+    }
+  ]
+}
+```
+
+### Error
+
+| Status | 内容  |
+| ------ | --- |
+| 401    | 未認証 |
+
+---
+
+# 8. Issue API
+
+## 8.1 Get Issue List
+
+### Endpoint
+
+```http
+GET /api/projects/{project_id}/issues
+```
+
+### Description
+
+指定Projectに属するIssue一覧を取得する。
+
+### Query Parameters
+
+| Parameter   | Required | 説明              |
+| ----------- | :------: | --------------- |
+| status      |    No    | Statusで絞り込み     |
+| category    |    No    | Categoryで絞り込み   |
+| target_type |    No    | TargetTypeで絞り込み |
+| keyword     |    No    | Description検索   |
+| page        |    No    | ページ番号           |
+| page_size   |    No    | 1ページあたりの件数      |
+
+### Response
+
+```json
+{
+  "items": [
+    {
+      "id": 101,
+      "target_type": "ROOM",
+      "target": "1203",
+      "category": "LIGHTING",
+      "description": "Bathroom light does not turn off.",
+      "status": "OPEN",
+      "updated_at": "2026-06-30T10:30:00"
+    }
+  ],
+  "page": 1,
+  "page_size": 20,
+  "total": 1
+}
+```
+
+### Error
+
+| Status | 内容            |
+| ------ | ------------- |
+| 401    | 未認証           |
+| 404    | Projectが存在しない |
+
+---
+
+## 8.2 Get Issue Detail
+
+### Endpoint
+
+```http
+GET /api/issues/{issue_id}
+```
+
+### Description
+
+Issue詳細を取得する。
+
+CommentおよびAttachment一覧も含めて返却する。
+
+### Response
+
+```json
+{
+  "id": 101,
+  "project": {
+    "id": 1,
+    "name": "Hotel A Commissioning"
+  },
+  "target_type": "ROOM",
+  "target": "1203",
+  "category": "LIGHTING",
+  "description": "Bathroom light does not turn off.",
+  "status": "OPEN",
+  "created_by": {
+    "id": 1,
+    "display_name": "Engineer 1"
+  },
+  "created_at": "2026-06-30T10:00:00",
+  "updated_at": "2026-06-30T10:30:00",
+  "comments": [
+    {
+      "id": 1,
+      "comment": "Checked on site.",
+      "created_by": {
+        "id": 1,
+        "display_name": "Engineer 1"
+      },
+      "created_at": "2026-06-30T10:20:00"
+    }
+  ],
+  "attachments": [
+    {
+      "id": 1,
+      "file_name": "photo1.jpg",
+      "mime_type": "image/jpeg",
+      "file_size": 204800,
+      "uploaded_at": "2026-06-30T10:25:00"
+    }
+  ]
+}
+```
+
+### Error
+
+| Status | 内容          |
+| ------ | ----------- |
+| 401    | 未認証         |
+| 404    | Issueが存在しない |
+
+---
+
+## 8.3 Create Issue
+
+### Endpoint
+
+```http
+POST /api/projects/{project_id}/issues
+```
+
+### Description
+
+指定ProjectにIssueを登録する。
+
+### Request
+
+```json
+{
+  "target_type": "ROOM",
+  "target": "1203",
+  "category": "LIGHTING",
+  "description": "Bathroom light does not turn off.",
+  "raw_input_text": "Room 1203 bathroom light does not turn off."
+}
+```
+
+### Response
+
+```json
+{
+  "id": 101,
+  "message": "Issue created"
+}
+```
+
+### Error
+
+| Status | 内容            |
+| ------ | ------------- |
+| 400    | 入力値不正         |
+| 401    | 未認証           |
+| 404    | Projectが存在しない |
+
+---
+
+## 8.4 Update Issue
+
+### Endpoint
+
+```http
+PUT /api/issues/{issue_id}
+```
+
+### Description
+
+Issue内容を更新する。
+
+### Request
+
+```json
+{
+  "target_type": "ROOM",
+  "target": "1203",
+  "category": "LIGHTING",
+  "description": "Bathroom light remains on after Master OFF."
+}
+```
+
+### Response
+
+```json
+{
+  "id": 101,
+  "message": "Issue updated"
+}
+```
+
+### Error
+
+| Status | 内容          |
+| ------ | ----------- |
+| 400    | 入力値不正       |
+| 401    | 未認証         |
+| 404    | Issueが存在しない |
+
+---
+
+## 8.5 Update Issue Status
+
+### Endpoint
+
+```http
+PATCH /api/issues/{issue_id}/status
+```
+
+### Description
+
+IssueのStatusを変更する。
+
+### Request
+
+```json
+{
+  "status": "IN_PROGRESS"
+}
+```
+
+### Response
+
+```json
+{
+  "id": 101,
+  "status": "IN_PROGRESS",
+  "message": "Status updated"
+}
+```
+
+### Error
+
+| Status | 内容          |
+| ------ | ----------- |
+| 400    | 入力値不正       |
+| 401    | 未認証         |
+| 404    | Issueが存在しない |
+
+---
+
+# 9. AI Draft API
+
+## 9.1 Generate AI Draft
+
+### Endpoint
+
+```http
+POST /api/ai/issue-draft
+```
+
+### Description
+
+音声入力またはテキスト入力を解析し、Issue Draftを生成する。
+
+AIは業務データを保存せず、生成結果のみを返却する。
+
+### Request
+
+```json
+{
+  "project_id": 1,
+  "input_text": "Room 1203 bathroom light does not turn off."
+}
+```
+
+### Response
+
+```json
+{
+  "target_type": "ROOM",
+  "target": "1203",
+  "category": "LIGHTING",
+  "description": "Bathroom light remains on after operation."
+}
+```
+
+### Error
+
+| Status | 内容     |
+| ------ | ------ |
+| 400    | 入力値不正  |
+| 401    | 未認証    |
+| 500    | AI処理失敗 |
+
+---
+
+# 10. Comment API
+
+## 10.1 Create Comment
+
+### Endpoint
+
+```http
+POST /api/issues/{issue_id}/comments
+```
+
+### Description
+
+IssueへCommentを追加する。
+
+### Request
+
+```json
+{
+  "comment": "Checked on site. Reproduced successfully."
+}
+```
+
+### Response
+
+```json
+{
+  "id": 1,
+  "message": "Comment created"
+}
+```
+
+### Error
+
+| Status | 内容          |
+| ------ | ----------- |
+| 400    | 入力値不正       |
+| 401    | 未認証         |
+| 404    | Issueが存在しない |
+
+---
+
+## 10.2 Get Comments
+
+### Endpoint
+
+```http
+GET /api/issues/{issue_id}/comments
+```
+
+### Description
+
+Issueに登録されているComment一覧を取得する。
+
+### Response
+
+```json
+{
+  "items": [
+    {
+      "id": 1,
+      "comment": "Checked on site.",
+      "created_by": {
+        "id": 1,
+        "display_name": "Engineer 1"
+      },
+      "created_at": "2026-06-30T10:20:00"
+    }
+  ]
+}
+```
+
+### Error
+
+| Status | 内容          |
+| ------ | ----------- |
+| 401    | 未認証         |
+| 404    | Issueが存在しない |
+
+---
+
+# 11. Attachment API
+
+## 11.1 Upload Attachment
+
+### Endpoint
+
+```http
+POST /api/issues/{issue_id}/attachments
+```
+
+### Description
+
+Issueへ添付ファイルを追加する。
+
+### Request
+
+Content-Type:
+
+```text
+multipart/form-data
+```
+
+### Form Data
+
+| Name | 型    |  必須 | 説明     |
+| ---- | ---- | :-: | ------ |
+| file | File | Yes | 添付ファイル |
+
+### Response
+
+```json
+{
+  "id": 1,
+  "file_name": "issue_photo_001.jpg",
+  "message": "Attachment uploaded"
+}
+```
+
+### Error
+
+| Status | 内容          |
+| ------ | ----------- |
+| 400    | ファイル不正      |
+| 401    | 未認証         |
+| 404    | Issueが存在しない |
+
+---
+
+## 11.2 Get Attachments
+
+### Endpoint
+
+```http
+GET /api/issues/{issue_id}/attachments
+```
+
+### Description
+
+Issueに添付されているAttachment一覧を取得する。
+
+### Response
+
+```json
+{
+  "items": [
+    {
+      "id": 1,
+      "file_name": "issue_photo_001.jpg",
+      "mime_type": "image/jpeg",
+      "file_size": 204800,
+      "uploaded_at": "2026-06-30T10:25:00"
+    }
+  ]
+}
+```
+
+### Error
+
+| Status | 内容          |
+| ------ | ----------- |
+| 401    | 未認証         |
+| 404    | Issueが存在しない |
+
+---
+
+## 11.3 Download Attachment
+
+### Endpoint
+
+```http
+GET /api/attachments/{attachment_id}
+```
+
+### Description
+
+添付ファイルを取得する。
+
+### Response
+
+添付ファイル本体を返却する。
+
+### Error
+
+| Status | 内容               |
+| ------ | ---------------- |
+| 401    | 未認証              |
+| 404    | Attachmentが存在しない |
+
+---
+
+## 11.4 Delete Attachment
+
+### Endpoint
+
+```http
+DELETE /api/issues/{issue_id}/attachments/{attachment_id}
+```
+
+### Description
+
+IssueからAttachmentを削除する。
+
+添付ファイル本体および管理情報を削除する。
+
+### Response
+
+```json
+{
+  "message": "Attachment deleted"
+}
+```
+
+### Error
+
+| Status | 内容                       |
+| ------ | ------------------------ |
+| 401    | 未認証                      |
+| 404    | IssueまたはAttachmentが存在しない |
+
+---
+
+# 12. Error Response
+
+本章では、APIで共通利用するエラーレスポンス形式を定義する。
+
+---
+
+## 12.1 Error Response Format
+
+エラー時は以下のJSON形式で返却する。
+
+```json
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Validation failed."
+  }
+}
+```
+
+---
+
+## 12.2 Error Codes
+
+| Code                  | HTTP Status | 説明          |
+| --------------------- | ----------- | ----------- |
+| VALIDATION_ERROR      | 400         | 入力値が不正      |
+| UNAUTHORIZED          | 401         | 認証されていない    |
+| FORBIDDEN             | 403         | 権限不足        |
+| NOT_FOUND             | 404         | リソースが存在しない  |
+| CONFLICT              | 409         | データ競合       |
+| INTERNAL_SERVER_ERROR | 500         | システム内部エラー   |
+| AI_SERVICE_ERROR      | 500         | AIサービス実行エラー |
+
+---
+
+## 12.3 Validation Error Example
+
+```json
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Room is required."
+  }
+}
+```
+
+---
+
+## 12.4 Internal Server Error Example
+
+```json
+{
+  "error": {
+    "code": "INTERNAL_SERVER_ERROR",
+    "message": "Unexpected server error."
+  }
+}
+```
+
+---
+
+# 13. Authorization
+
+本章ではAPIの認可方針を定義する。
+
+---
+
+## 13.1 Roles
+
+システムで利用するロールを以下に示す。
+
+| Role          | 説明          |
+| ------------- | ----------- |
+| Administrator | システム管理者     |
+| Engineer      | コミッショニング担当者 |
+
+---
+
+## 13.2 Authorization Matrix
+
+| API                 | Administrator | Engineer |
+| ------------------- | :-----------: | :------: |
+| Login               |       ○       |     ○    |
+| Logout              |       ○       |     ○    |
+| Current User        |       ○       |     ○    |
+| Project List        |       ○       |     ○    |
+| Issue List          |       ○       |     ○    |
+| Issue Detail        |       ○       |     ○    |
+| Create Issue        |       ○       |     ○    |
+| Update Issue        |       ○       |     ○    |
+| Update Status       |       ○       |     ○    |
+| AI Draft            |       ○       |     ○    |
+| Create Comment      |       ○       |     ○    |
+| Get Comments        |       ○       |     ○    |
+| Upload Attachment   |       ○       |     ○    |
+| Get Attachments     |       ○       |     ○    |
+| Download Attachment |       ○       |     ○    |
+| Delete Attachment   |       ○       |     ○    |
+
+---
+
+## 13.3 Administration APIs
+
+初期版では、Project管理・User管理・Master Data管理はCLIまたはCSVで実施する。
+
+そのため、Administration用Web APIは提供しない。
+
+将来的にWeb管理画面を実装する際に、Administration APIを追加する。
+
+---
+
+# 14. API Constraints
+
+初期版のAPI設計における制約を以下に示す。
+
+| 項目                    | 内容                  |
+| --------------------- | ------------------- |
+| Protocol              | HTTP                |
+| Data Format           | JSON（添付ファイルを除く）     |
+| File Upload           | multipart/form-data |
+| Authentication        | 認証必須                |
+| AI                    | Ollama              |
+| Database              | SQLite              |
+| Attachment Storage    | Local Storage       |
+| Issue Delete API      | 提供しない               |
+| Comment Update API    | 提供しない               |
+| Comment Delete API    | 提供しない               |
+| Attachment Update API | 提供しない               |
+| Administration API    | 提供しない               |
+
+---
+
+# 15. Future Enhancements
+
+将来的なAPI拡張を以下に示す。
+
+* Administration API
+* User Management API
+* Project Management API
+* Master Data API
+* Issue Search APIの検索条件拡張
+* Issue履歴取得API
+* Notification API
+* Audit Log API
+* AI設定API
+* WebSocketによるリアルタイム更新
+* APIバージョニング
+
+これらは初期版の設計範囲には含めない。
+
+---
+
+# End of Document
