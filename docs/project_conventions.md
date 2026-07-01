@@ -371,40 +371,35 @@ refactor/issue-service
 
 # 10. Commit Message
 
-コミットメッセージには Conventional Commits を採用する。
+## Prefix
 
-## 10.1 Format
+コミットメッセージは Conventional Commits に従う。
 
-```text
-<type>: <summary>
-```
+### Prefix
 
-例
+以下のプレフィックスを使用する。
 
-```text
-feat: add issue create API
+- feat: 新機能
+- fix: バグ修正
+- docs: ドキュメント
+- refactor: リファクタリング
+- test: テスト
+- chore: ビルド、依存関係、開発環境など
 
-fix: validate room number
+### Rules
 
-docs: update basic design
+- コミットメッセージは英語で記述する。
+- 命令形（Imperative mood）を使用する。
+- 1つのコミットでは1つの目的に限定する。
 
-refactor: simplify issue service
+### Examples
 
-test: add issue service tests
-```
-
-## 10.2 Commit Types
-
-| Type     | 説明       |
-| -------- | -------- |
-| feat     | 新機能      |
-| fix      | バグ修正     |
-| docs     | ドキュメント更新 |
-| refactor | リファクタリング |
-| test     | テスト追加・修正 |
-| chore    | ビルド・設定変更 |
-
-コミットメッセージは簡潔かつ内容が分かるものとする。
+- feat: add issue API
+- fix: validate room type
+- docs: update project conventions
+- refactor: simplify repository layer
+- test: add issue service tests
+- chore: update dependencies
 
 ---
 
