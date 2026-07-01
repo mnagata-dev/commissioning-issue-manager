@@ -105,7 +105,7 @@ docs/
 
 ---
 
-# 4. Documentation Language
+# 4. Language Policy
 
 ## 4.1 基本方針
 
