@@ -1,17 +1,18 @@
 # CIM UI Design
 
-**Document Version:** 1.0
+**Document Version:** 1.1
 **Status:** Draft
-**Last Updated:** 2026-06-30
+**Last Updated:** 2026-07-03
 **Author:** Masato Nagata
 
 ---
 
 # Revision History
 
-| Version | Date       | Description     |
-| ------- | ---------- | --------------- |
-| 1.0     | 2026-06-30 | Initial version |
+|Version|Date|Description|
+|---|---|---|
+|1.0|2026-06-30|Initial version|
+|1.1|2026-07-03|Reflect updated login specification and master data terminology.|
 
 ---
 
@@ -38,7 +39,7 @@
 
 # 1. Purpose
 
-本書は、CIM（Commissioning Issue Manager）のUI設計を定義することを目的とする。
+本書は、CIM(Commissioning Issue Manager)のUI設計を定義することを目的とする。
 
 本書では、画面一覧、画面遷移、各画面の表示項目、入力項目、および操作仕様を定義する。
 
@@ -48,21 +49,21 @@
 
 本書では以下を対象とする。
 
-* 画面一覧
-* 画面遷移
-* 共通UI方針
-* 各画面の表示項目
-* 各画面の入力項目
-* 各画面の操作仕様
-* エラー表示方針
+- 画面一覧
+- 画面遷移
+- 共通UI方針
+- 各画面の表示項目
+- 各画面の入力項目
+- 各画面の操作仕様
+- エラー表示方針
 
 以下は対象外とする。
 
-* API詳細仕様
-* DB設計
-* CSS詳細
-* JavaScript実装詳細
-* テストケース
+- API詳細仕様
+- DB設計
+- CSS詳細
+- JavaScript実装詳細
+- テストケース
 
 これらは各設計書で定義する。
 
@@ -72,12 +73,12 @@
 
 本書は以下のドキュメントを参照する。
 
-| ドキュメント                 | 説明          |
-| ---------------------- | ----------- |
-| requirements.md        | 要件定義書       |
-| basic_design.md        | 基本設計書       |
-| api_design.md          | API設計書      |
-| project_conventions.md | プロジェクト共通ルール |
+|ドキュメント|説明|
+|---|---|
+|requirements.md|要件定義書|
+|basic_design.md|基本設計書|
+|api_design.md|API設計書|
+|project_conventions.md|プロジェクト共通ルール|
 
 ---
 
@@ -117,15 +118,15 @@ AIが生成した内容は、必ず利用者が確認・修正してから保存
 
 初期版で提供する画面を以下に示す。
 
-| 画面                | 説明          |
-| ----------------- | ----------- |
-| Login             | ログイン画面      |
-| Project Selection | Project選択画面 |
-| Issue List        | Issue一覧画面   |
-| Issue Detail      | Issue詳細画面   |
-| Issue Create      | Issue登録画面   |
-| Issue Edit        | Issue編集画面   |
-| Administration    | 管理メニュー画面    |
+|画面|説明|
+|---|---|
+|Login|ログイン画面|
+|Project Selection|Project選択画面|
+|Issue List|Issue一覧画面|
+|Issue Detail|Issue詳細画面|
+|Issue Create|Issue登録画面|
+|Issue Edit|Issue編集画面|
+|Administration|管理メニュー画面|
 
 ---
 
@@ -163,16 +164,16 @@ Administration
 
 本システムで共通利用するUIコンポーネントを以下に示す。
 
-| コンポーネント    | 用途                        |
-| ---------- | ------------------------- |
-| Header     | 画面タイトル、ログアウト、現在のProject表示 |
-| Navigation | 主要画面への遷移                  |
-| Button     | 保存、戻る、削除、追加などの操作          |
-| Form       | 入力フォーム                    |
-| Modal      | 確認ダイアログ                   |
-| Alert      | エラー・警告・成功メッセージ            |
-| Loading    | API通信中表示                  |
-| Badge      | StatusやCategory表示         |
+|コンポーネント|用途|
+|---|---|
+|Header|画面タイトル、ログアウト、現在のProject表示|
+|Navigation|主要画面への遷移|
+|Button|保存、戻る、削除、追加などの操作|
+|Form|入力フォーム|
+|Modal|確認ダイアログ|
+|Alert|エラー・警告・成功メッセージ|
+|Loading|API通信中表示|
+|Badge|StatusやCategory表示|
 
 ---
 
@@ -180,10 +181,10 @@ Administration
 
 Headerには以下を表示する。
 
-* システム名
-* 現在のProject
-* ログインユーザー
-* Logoutボタン
+- システム名
+- 現在のProject
+- ログインユーザー
+- Logoutボタン
 
 ---
 
@@ -193,12 +194,12 @@ Headerには以下を表示する。
 
 例：
 
-* Save
-* Cancel
-* Back
-* Add Comment
-* Upload Attachment
-* Generate AI Draft
+- Save
+- Cancel
+- Back
+- Add Comment
+- Upload Attachment
+- Generate AI Draft
 
 ---
 
@@ -252,21 +253,21 @@ Error Message
 
 ## 8.3 Display Items
 
-| 項目            | 説明       |
-| ------------- | -------- |
-| Username      | ログイン名入力  |
-| Password      | パスワード入力  |
-| Login Button  | ログイン実行   |
-| Error Message | 認証失敗時に表示 |
+|項目|説明|
+|---|---|
+|Username|ログイン ID (メールアドレス形式も可)|
+|Password|パスワード入力|
+|Login Button|ログイン実行|
+|Error Message|認証失敗時に表示|
 
 ---
 
 ## 8.4 Operations
 
-| 操作        | 内容         |
-| --------- | ---------- |
-| Login     | 認証を実行する。   |
-| Enter Key | ログインを実行する。 |
+|操作|内容|
+|---|---|
+|Login|認証を実行する。|
+|Enter Key|ログインを実行する。|
 
 ---
 
@@ -282,7 +283,7 @@ Error Message
 
 ```text
 +--------------------------------------------------+
-| Project Selection                               |
+|Project Selection|
 +--------------------------------------------------+
 
 Current User
@@ -306,20 +307,20 @@ Project List
 
 ## 9.3 Display Items
 
-| 項目                    | 説明             |
-| --------------------- | -------------- |
-| Current User          | ログイン中の利用者      |
-| Project List          | 選択可能なProject一覧 |
-| Select Project Button | Project決定      |
+|項目|説明|
+|---|---|
+|Current User|ログイン中の利用者|
+|Project List|選択可能なProject一覧|
+|Select Project Button|Project決定|
 
 ---
 
 ## 9.4 Operations
 
-| 操作             | 内容                 |
-| -------------- | ------------------ |
-| Select Project | Projectを選択する。      |
-| Confirm        | Issue List画面へ遷移する。 |
+|操作|内容|
+|---|---|
+|Select Project|Projectを選択する。|
+|Confirm|Issue List画面へ遷移する。|
 
 ---
 
@@ -337,7 +338,7 @@ Issue検索およびIssue登録の起点となる画面である。
 
 ```text
 +--------------------------------------------------+
-| Project : Hotel A Commissioning                 |
+|Project : Hotel A Commissioning|
 +--------------------------------------------------+
 
 Search
@@ -384,24 +385,24 @@ Curtain does not close.
 
 ## 10.3 Display Items
 
-| 項目                | 説明           |
-| ----------------- | ------------ |
-| Current Project   | 選択中Project   |
-| Search Conditions | 検索条件         |
-| Issue List        | Issue一覧      |
-| Status Badge      | Status表示     |
-| New Issue Button  | Issue登録画面へ遷移 |
+|項目|説明|
+|---|---|
+|Current Project|選択中Project|
+|Search Conditions|検索条件|
+|Issue List|Issue一覧|
+|Status Badge|Status表示|
+|New Issue Button|Issue登録画面へ遷移|
 
 ---
 
 ## 10.4 Search Conditions
 
-| 項目         |  必須 | 説明         |
-| ---------- | :-: | ---------- |
-| Keyword    |  No | キーワード検索    |
-| Status     |  No | Status     |
-| Category   |  No | Category   |
-| TargetType |  No | TargetType |
+|項目|必須|説明|
+|---|:-:|---|
+|Keyword|No|キーワード検索|
+|Status|No|Status|
+|Category|No|Category|
+|TargetType|No|TargetType|
 
 ---
 
@@ -409,25 +410,25 @@ Curtain does not close.
 
 各Issueには以下を表示する。
 
-| 項目          | 説明           |
-| ----------- | ------------ |
-| Status      | 現在の状態        |
-| Room        | Room         |
-| Target      | 対象           |
-| Category    | Category     |
-| Description | Issue内容の先頭部分 |
-| Updated At  | 最終更新日時       |
+|項目|説明|
+|---|---|
+|Status|現在の状態|
+|Room|Room|
+|Target|対象|
+|Category|Category|
+|Description|Issue内容の先頭部分|
+|Updated At|最終更新日時|
 
 ---
 
 ## 10.6 Operations
 
-| 操作             | 内容                      |
-| -------------- | ----------------------- |
-| Search         | 条件検索を行う。                |
-| Open Issue     | Issue Detail画面へ遷移する。    |
-| New Issue      | Issue Create画面へ遷移する。    |
-| Change Project | Project Selection画面へ戻る。 |
+|操作|内容|
+|---|---|
+|Search|条件検索を行う。|
+|Open Issue|Issue Detail画面へ遷移する。|
+|New Issue|Issue Create画面へ遷移する。|
+|Change Project|Project Selection画面へ戻る。|
 
 ---
 
@@ -494,28 +495,28 @@ video_001.mp4
 
 ## 11.3 Display Items
 
-| 項目              | 説明         |
-| --------------- | ---------- |
-| Status          | Issueの状態   |
-| Room            | Room       |
-| Target Type     | TargetType |
-| Target          | 対象機器・対象箇所  |
-| Category        | Category   |
-| Description     | 詳細説明       |
-| Comment List    | コメント履歴     |
-| Attachment List | 添付ファイル一覧   |
+|項目|説明|
+|---|---|
+|Status|Issueの状態|
+|Room|Room|
+|Target Type|TargetType|
+|Target|対象機器・対象箇所|
+|Category|Category|
+|Description|詳細説明|
+|Comment List|コメント履歴|
+|Attachment List|添付ファイル一覧|
 
 ---
 
 ## 11.4 Operations
 
-| 操作                | 内容                 |
-| ----------------- | ------------------ |
-| Edit              | Issue Edit画面へ遷移する。 |
-| Add Comment       | Commentを追加する。      |
-| Upload Attachment | Attachmentを追加する。   |
-| Open Attachment   | 添付ファイルを表示する。       |
-| Back              | Issue Listへ戻る。     |
+|操作|内容|
+|---|---|
+|Edit|Issue Edit画面へ遷移する。|
+|Add Comment|Commentを追加する。|
+|Upload Attachment|Attachmentを追加する。|
+|Open Attachment|添付ファイルを表示する。|
+|Back|Issue Listへ戻る。|
 
 ---
 
@@ -575,24 +576,24 @@ Input
 
 ## 12.3 Display Items
 
-| 項目          | 説明           |
-| ----------- | ------------ |
-| Room        | Room選択       |
-| Target Type | TargetType選択 |
-| Target      | 対象           |
-| Category    | Category選択   |
-| Description | 詳細説明         |
-| AI Draft    | AI入力支援       |
+|項目|説明|
+|---|---|
+|Room|Room選択|
+|Target Type|TargetType選択|
+|Target|対象|
+|Category|Category選択|
+|Description|詳細説明|
+|AI Draft|AI入力支援|
 
 ---
 
 ## 12.4 Operations
 
-| 操作                | 内容             |
-| ----------------- | -------------- |
-| Generate AI Draft | AI Draftを生成する。 |
-| Save              | Issueを登録する。    |
-| Cancel            | 登録を中止する。       |
+|操作|内容|
+|---|---|
+|Generate AI Draft|AI Draftを生成する。|
+|Save|Issueを登録する。|
+|Cancel|登録を中止する。|
 
 ---
 
@@ -662,11 +663,11 @@ Issue Create画面と同様の入力項目を表示する。
 
 ## 13.4 Operations
 
-| 操作            | 内容           |
-| ------------- | ------------ |
-| Save          | Issueを更新する。  |
-| Cancel        | 編集を中止する。     |
-| Change Status | Statusを変更する。 |
+|操作|内容|
+|---|---|
+|Save|Issueを更新する。|
+|Cancel|編集を中止する。|
+|Change Status|Statusを変更する。|
 
 ---
 
@@ -674,11 +675,11 @@ Issue Create画面と同様の入力項目を表示する。
 
 以下の項目を必須とする。
 
-* Room
-* Target Type
-* Target
-* Category
-* Description
+- Room
+- Target Type
+- Target
+- Category
+- Description
 
 入力内容に不備がある場合は、保存を行わずエラーメッセージを表示する。
 
@@ -730,20 +731,20 @@ Master Data Management
 
 ## 14.3 Display Items
 
-| 項目                     | 説明                 |
-| ---------------------- | ------------------ |
-| Project Management     | Project管理機能        |
-| User Management        | User管理機能           |
-| Master Data Management | Room、RoomTypeなどの管理 |
-| Back Button            | 前画面へ戻る             |
+|項目|説明|
+|---|---|
+|Project Management|Project管理機能|
+|User Management|User管理機能|
+|Master Data Management|Hotel、RoomType、Room などの管理|
+|Back Button|前画面へ戻る|
 
 ---
 
 ## 14.4 Operations
 
-| 操作   | 内容      |
-| ---- | ------- |
-| Back | 前画面へ戻る。 |
+|操作|内容|
+|---|---|
+|Back|前画面へ戻る。|
 
 初期版ではWeb画面からの更新機能は提供しない。
 
@@ -759,10 +760,10 @@ Master Data Management
 
 ## 15.2 Display Policy
 
-* エラーメッセージは利用者に理解しやすい表現とする。
-* システム内部の詳細情報は表示しない。
-* 入力エラーは対象項目の近くに表示する。
-* システムエラーは画面上部に表示する。
+- エラーメッセージは利用者に理解しやすい表現とする。
+- システム内部の詳細情報は表示しない。
+- 入力エラーは対象項目の近くに表示する。
+- システムエラーは画面上部に表示する。
 
 ---
 
@@ -785,7 +786,7 @@ Descriptionを入力してください。
 例：
 
 ```text
-ユーザー名またはパスワードが正しくありません。
+ログイン ID またはパスワードが正しくありません。
 ```
 
 ---
@@ -818,16 +819,16 @@ AI Draftの生成に失敗しました。
 
 将来的に以下のUI改善を検討する。
 
-* Web画面によるProject管理
-* Web画面によるUser管理
-* Web画面によるMaster Data管理
-* Dashboard画面
-* Issue統計画面
-* AIチャット画面
-* ダークモード対応
-* 多言語対応
-* タブレット向けレイアウト最適化
-* アクセシビリティ向上
+- Web画面によるProject管理
+- Web画面によるUser管理
+- Web画面によるMaster Data管理
+- Dashboard画面
+- Issue統計画面
+- AIチャット画面
+- ダークモード対応
+- 多言語対応
+- タブレット向けレイアウト最適化
+- アクセシビリティ向上
 
 これらは初期版の設計範囲には含めない。
 
