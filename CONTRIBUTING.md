@@ -1,97 +1,240 @@
-Commissioning Issue Manager (CIM) の実装フェーズを開始します。
+# Contributing
 
-まず、プロジェクトにアップロードされている最新版のドキュメントをすべて読み込み、設計内容を把握してください。
+Thank you for contributing to the Commissioning Issue Manager (CIM) project.
 
-対象ドキュメント
-- requirements.md
-- basic_design.md
-- database_design.md
-- api_design.md
-- ui_design.md
-- detailed_design.md
-- test_design.md
-- project_conventions.md
-- review_notes.md
-- CHANGELOG.md
+This document defines the development workflow, coding rules, review process, and AI usage guidelines for this project.
 
-また、プロジェクト内の ADR (Architecture Decision Record) も読み込み、設計判断の経緯を把握してください。
+---
 
-【ドキュメントの優先順位】
+# 1. Purpose
 
-以下の優先順位で設計内容を判断してください。
+This project follows a **design-first development process**.
 
-1. requirements.md
-2. 各設計書
-   - basic_design.md
-   - database_design.md
-   - api_design.md
-   - ui_design.md
-   - detailed_design.md
-   - test_design.md
-3. project_conventions.md
-4. ADR
-5. review_notes.md
-6. CHANGELOG.md
+Implementation must follow the approved design documents.
 
-最新版の Requirements および各設計書を正とします。
+If implementation requires a design change, update the design first after discussion and agreement.
 
-ADR は設計判断の経緯を理解するための資料です。ADR と最新版の設計書の内容が異なる場合は、最新版の設計書を優先してください。
+---
 
-【実装方針】
+# 2. Document Priority
 
-1. Requirements を最優先とし、最新版の各設計書を正として実装してください。
+Use the following priority when making implementation decisions.
 
-2. 設計書間で矛盾や不整合を見つけた場合は、実装を進める前に必ず指摘してください。
+1. `requirements.md`
+2. Design documents
+   - `basic_design.md`
+   - `database_design.md`
+   - `api_design.md`
+   - `ui_design.md`
+   - `detailed_design.md`
+   - `test_design.md`
+3. `project_conventions.md`
+4. ADR (Architecture Decision Records)
+5. `review_notes.md`
+6. `CHANGELOG.md`
 
-3. 設計変更が必要な場合は、勝手に実装を変更せず、必ず設計変更案を提示し、合意後に実装してください。
+The latest version of the Requirements and design documents always takes precedence.
 
-4. Requirements や設計書に記載のない仕様は推測して実装せず、必ず確認してください。
+ADR documents describe the background and rationale for design decisions.
 
-5. 実装は小さな単位で進めます。
-   - 1機能 = 1ブランチ = 1Pull Request
-   - レビューしやすい粒度を維持してください。
+If an ADR conflicts with the latest design documents, follow the latest design documents.
 
-6. 各機能は以下の流れで進めます。
-   - 実装方針の確認
-   - 実装
-   - テストコード作成
-   - レビュー
-   - コミット
-   - Pull Request
-   - マージ
+---
 
-7. テストコードは test_design.md に従って作成してください。
+# 3. Development Principle
 
-8. project_conventions.md の命名規則、ディレクトリ構成、コーディングルールに従ってください。
+Design documents are the source of truth.
 
-9. 実装中に改善案やリファクタリング案がある場合は歓迎します。ただし、設計変更を伴う場合は、必ず提案し、合意後に実装してください。
+AI tools should assist implementation, not redefine the design.
 
-10. 品質・可読性・保守性を重視し、過度な最適化は行わないでください。
+When implementation and design conflict:
 
-【ChatGPT と Codex の役割】
+- Do not change the implementation to match assumptions.
+- Do not modify the design without agreement.
+- Discuss the issue first.
+- Update the design documents if necessary.
+- Implement only after the design has been agreed.
 
-ChatGPT
-- 実装方針の検討
-- 設計レビュー
-- アーキテクチャの相談
-- コードレビュー
-- リファクタリングの相談
-- 不具合解析
-- Git / GitHub 運用の相談
+---
 
-Codex
-- コード実装
-- ファイル作成・編集
-- テストコード作成
-- リファクタリング
-- 小さな単位での実装
+# 4. Development Workflow
 
-【レビュー方針】
+Develop each feature in small increments.
 
-実装前に、対象機能について設計書との整合性を確認してください。
+One feature should correspond to:
 
-実装後は、Requirements、各設計書、および test_design.md との整合性を確認し、必要に応じて改善点を提案してください。
+- One branch
+- One Pull Request
 
-ただし、設計変更を伴う場合は、勝手に実装を変更せず、必ず提案してください。
+Recommended workflow:
 
-まずは最新版の設計書をすべて読み込み、設計内容を要約した上で、実装フェーズ全体の進め方を提案してください。その後は、一つの機能ごとに「設計確認 → 実装 → テスト → レビュー → コミット → Pull Request」の流れで進めます。
+1. Confirm the design
+2. Implement
+3. Write tests
+4. Review
+5. Commit
+6. Create Pull Request
+7. Merge
+
+---
+
+# 5. Branch Strategy
+
+Use the following branch naming conventions.
+
+| Purpose | Example |
+| --- | --- |
+| Feature | `feature/issue-api` |
+| Bug Fix | `fix/login-validation` |
+| Documentation | `docs/update-api-design` |
+| Refactoring | `refactor/service-layer` |
+| Test | `test/issue-service` |
+
+---
+
+# 6. Commit Convention
+
+Follow Conventional Commits.
+
+Examples:
+
+```text
+feat(issue): implement issue repository
+
+fix(auth): validate username
+
+docs(api): update create issue request
+
+refactor(service): simplify validation logic
+
+test(issue): add issue service tests
+```
+
+---
+
+# 7. Pull Request
+
+Keep Pull Requests small and easy to review.
+
+Each Pull Request should:
+
+- implement one feature
+- update related documents if necessary
+- include appropriate tests
+- follow project conventions
+- avoid unrelated changes
+
+---
+
+# 8. Design Rules
+
+- Requirements are the highest priority.
+- Do not implement undocumented features.
+- Do not guess missing specifications.
+- If the design is unclear, ask before implementation.
+- If a design change is required, propose it first.
+- Implement only after the design has been updated and agreed.
+
+---
+
+# 9. Coding Rules
+
+Follow the rules defined in `project_conventions.md`.
+
+In particular:
+
+- directory structure
+- naming conventions
+- coding style
+- API naming
+- Markdown style
+
+---
+
+# 10. Testing
+
+Tests should follow `test_design.md`.
+
+Implementation is not complete until the corresponding tests have been added.
+
+Prefer automated tests whenever practical.
+
+---
+
+# 11. Review Rules
+
+Before implementation:
+
+- Verify consistency with all design documents.
+
+After implementation:
+
+- Verify consistency with:
+  - Requirements
+  - Design documents
+  - Test Design
+  - Project Conventions
+
+If improvements require design changes, propose them before implementation.
+
+---
+
+# 12. AI Instructions
+
+This project actively uses AI-assisted development.
+
+## ChatGPT
+
+Use ChatGPT for:
+
+- implementation planning
+- architecture discussions
+- design review
+- code review
+- refactoring advice
+- debugging
+- Git / GitHub workflow support
+
+## Codex
+
+Use Codex for:
+
+- code implementation
+- file creation and editing
+- test implementation
+- refactoring
+- repetitive development tasks
+
+---
+
+# 13. AI Development Rules
+
+When using AI:
+
+1. Read the latest project documents before implementation.
+2. Follow the document priority defined in this file.
+3. Never modify the design without prior agreement.
+4. Never implement undocumented requirements.
+5. If requirements or design documents are inconsistent, report the issue and wait for clarification before implementation.
+6. Keep implementations small and reviewable.
+7. Do not sacrifice readability or maintainability for unnecessary optimization.
+
+---
+
+# 14. References
+
+- `requirements.md`
+- `basic_design.md`
+- `database_design.md`
+- `api_design.md`
+- `ui_design.md`
+- `detailed_design.md`
+- `test_design.md`
+- `project_conventions.md`
+- `review_notes.md`
+- `CHANGELOG.md`
+- `docs/adr/*`
+
+---
+
+End of Document
