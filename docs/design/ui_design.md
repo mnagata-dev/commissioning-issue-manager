@@ -2,7 +2,7 @@
 
 - **Document Version:** 1.2
 - **Status:** Draft
-- **Last Updated:** 2026-07-08
+- **Last Updated:** 2026-07-09
 - **Author:** Masato Nagata
 
 ---

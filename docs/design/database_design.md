@@ -465,6 +465,7 @@ Issue を管理する。
 |description|TEXT|No|詳細説明|
 |status|TEXT|No|Issue 状態|
 |created_by|INTEGER|No|登録者|
+|updated_by|INTEGER|No|更新者|
 |created_at|DATETIME|No|作成日時|
 |updated_at|DATETIME|No|更新日時|
 
@@ -475,6 +476,7 @@ Issue を管理する。
 |project_id|projects.id|
 |room_id|rooms.id|
 |created_by|users.id|
+|updated_by|users.id|
 
 ## Constraints
 
@@ -644,6 +646,7 @@ Business Data の整合性は Issue を中心として維持する。
 |issues|project_id|projects.id|
 |issues|room_id|rooms.id|
 |issues|created_by|users.id|
+|issues|updated_by|users.id|
 |comments|issue_id|issues.id|
 |comments|created_by|users.id|
 |attachments|issue_id|issues.id|

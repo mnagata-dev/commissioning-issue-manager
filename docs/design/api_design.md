@@ -325,6 +325,8 @@ GET /api/projects/{project_id}/issues
 
 指定 Project に属する Issue 一覧を取得する。
 
+Issue 一覧は updated_at の降順（新しく更新された Issue を先頭）で返却する。
+
 ### Query Parameters
 
 |Parameter|Required|説明|
@@ -406,6 +408,10 @@ Comment および Attachment 一覧も含めて返却する。
     "id": 1,
     "display_name": "Engineer 1"
   },
+  "updated_by": {
+    "id": 2,
+    "display_name": "Engineer 2"
+  },
   "created_at": "2026-06-30T10:00:00",
   "updated_at": "2026-06-30T10:30:00",
   "comments": [
@@ -465,8 +471,7 @@ ROOM の例
   "room_id": 1,
   "target_type": "ROOM",
   "category": "LIGHTING",
-  "description": "Bathroom light does not turn off.",
-  "raw_input_text": "Bathroom light does not turn off."
+  "description": "Bathroom light does not turn off."
 }
 ```
 
@@ -478,8 +483,7 @@ OTHER の例
   "target_type": "OTHER",
   "target": "Network",
   "category": "NETWORK",
-  "description": "Processor cannot communicate with gateway.",
-  "raw_input_text": "Processor cannot communicate with gateway."
+  "description": "Processor cannot communicate with gateway."
 }
 ```
 

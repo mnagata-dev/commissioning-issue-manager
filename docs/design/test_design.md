@@ -252,7 +252,7 @@ Repository は Mock 化し、業務ロジックのみを検証する。
 |ROOM with Target|Target Type = ROOM で Target を指定|
 |OTHER without Target|Target Type = OTHER で Target 未指定|
 |OTHER with Room|Target Type = OTHER で Room を指定|
-|Room and Project Mismatch|Room と Project が異なる Hotel に属する|
+|Room and Project Mismatch|Room と Project が異なる Hotel に属する場合|
 |Invalid Category|不正な Category|
 |Invalid Status|不正な Status|
 |Room Not Found|存在しない Room|

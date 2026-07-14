@@ -138,7 +138,7 @@ Accepted
 
 ### Action Items
 
-- basic_design.md 以降の設計書を Requirements Version 1.2 に合わせて更新すること
+なし
 
 ---
 
