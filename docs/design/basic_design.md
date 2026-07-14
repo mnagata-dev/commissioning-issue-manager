@@ -438,7 +438,7 @@ Engineer
     ▼
 Frontend
     │
-    │ POST /api/issues
+    │ POST /api/projects/{project_id}/issues
     ▼
 FastAPI
     │
