@@ -18,10 +18,10 @@
 
 Requirements Reviewでは以下を確認する。
 
-* 要件漏れがないこと
-* 要件間で矛盾がないこと
-* 実現可能な要件であること
-* 初期版のスコープが適切であること
+- 要件漏れがないこと
+- 要件間で矛盾がないこと
+- 実現可能な要件であること
+- 初期版のスコープが適切であること
 
 ---
 
@@ -45,14 +45,14 @@ Accepted
 
 以下の内容を確認した。
 
-* Project単位でIssueを管理すること
-* RoomおよびRoomTypeを採用すること
-* Issueを中心とした業務モデルとすること
-* AIはIssue Draft生成のみを担当すること
-* Userが最終確認を行うこと（User in Control）
-* AttachmentはLocal Storageへ保存すること
-* 管理データ（Project・Room・RoomType・User）はCLIまたはCSVで管理すること
-* 初期版ではWeb管理画面を提供しないこと
+- Project単位でIssueを管理すること
+- RoomおよびRoomTypeを採用すること
+- Issueを中心とした業務モデルとすること
+- AIはIssue Draft生成のみを担当すること
+- Userが最終確認を行うこと(User in Control)
+- AttachmentはLocal Storageへ保存すること
+- 管理データ(Project・Room・RoomType・User)はCLIまたはCSVで管理すること
+- 初期版ではWeb管理画面を提供しないこと
 
 ### Issues
 
@@ -61,6 +61,84 @@ Accepted
 ### Action Items
 
 なし
+
+---
+
+## Review No.2
+
+**Date**
+
+2026-07-03
+
+**Reviewer**
+
+Masato Nagata
+
+### Review Result
+
+Accepted
+
+### Confirmed Items
+
+以下の内容を確認した。
+
+- Hotel を Master Data に追加すること
+- User に password_hash を追加すること
+- username をログイン ID とし、メールアドレス形式も許容すること
+- Hotel Code、Project Code および RoomType Code を廃止すること
+- RoomType.description を廃止すること
+- requirements.md と関連設計書の整合性を確認し、更新すること
+
+### Issues
+
+なし
+
+### Action Items
+
+なし
+
+---
+
+## Review No.3
+
+**Date**
+
+2026-07-08
+
+**Reviewer**
+
+Masato Nagata
+
+### Review Result
+
+Accepted
+
+### Confirmed Items
+
+以下の内容を確認した。
+
+- Requirements を最上位ドキュメントとして再整理したこと
+- ドキュメントの目的および利用シナリオを明確化したこと
+- Document Principles を追加したこと
+- Typical Workflow を追加したこと
+- Design Principles を追加したこと
+- Room は Hotel に属すること
+- Project は Hotel に属する案件であること
+- Issue が Project と対象を結び付けること
+- Target Type を ROOM および OTHER に整理したこと
+- 初期版では Location を採用しないこと
+- AI は Category および Description の AI Draft のみを生成すること
+- AI は Room、Target Type および Target を決定しないこと
+- Administrator は Engineer のすべての機能を利用できること
+- requirements.md と関連設計書の整合性を確認し、更新すること
+
+### Issues
+
+なし
+
+### Action Items
+
+- basic_design.md 以降の設計書を Requirements Version 1.2 に合わせて更新すること
 
 ---
 

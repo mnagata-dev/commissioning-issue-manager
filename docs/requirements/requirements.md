@@ -1,17 +1,19 @@
 # CIM Requirements Specification
 
-**Document Version:** 1.0
-**Status:** Draft
-**Last Updated:** 2026-06-30
-**Author:** Masato Nagata
+- **Document Version:** 1.2
+- **Status:** Draft
+- **Last Updated:** 2026-07-08
+- **Author:** Masato Nagata
 
 ---
 
 # Revision History
 
-| Version | Date       | Description     |
-| ------- | ---------- | --------------- |
-| 1.0     | 2026-06-30 | Initial version |
+|Version|Date|Description|
+|---|---|---|
+|1.0|2026-06-30|Initial version|
+|1.1|2026-07-03|Reflect updated login specification and master data terminology.|
+|1.2|2026-07-08|Refine the system architecture, clarify the domain model, redefine AI responsibilities, and improve the document as the primary design specification for the project.|
 
 ---
 
@@ -19,664 +21,984 @@
 
 1. Purpose
 2. Scope
-3. Background
-4. Goals
-5. Users
+3. Document Principles
+4. Background
+5. Users and Roles
 6. System Overview
 7. Functional Requirements
 8. Non-functional Requirements
 9. Data Requirements
 10. AI Requirements
-11. Operational Requirements
-12. Constraints
-13. Future Enhancements
-14. Glossary
+11. Constraints
+12. Future Enhancements
+13. Glossary
 
 ---
 
 # 1. Purpose
 
-本書は、CIM（Commissioning Issue Manager）の要件を定義することを目的とする。
+本書は、Commissioning Issue Manager (CIM) の要件を定義することを目的とする。
 
-本書では、本システムが満たすべき機能要件、非機能要件、データ要件、AI要件、および運用要件を定義する。
+本書は、本システムの目的、業務背景、利用シナリオ、設計方針、および機能要件を定義する最上位ドキュメントである。
 
-本書を基に、基本設計、詳細設計、実装およびテストを実施する。
+本書を基準として、
+
+- 基本設計
+- データベース設計
+- API 設計
+- UI 設計
+- 詳細設計
+- テスト設計
+
+を作成する。
 
 ---
 
 # 2. Scope
 
-本書では以下を対象とする。
+本書では以下を定義する。
 
-* システムの目的
-* 利用者
-* システム概要
-* 機能要件
-* 非機能要件
-* データ要件
-* AI要件
-* 運用要件
-* システム制約
-* 将来拡張
+- システムの目的
+- 業務背景
+- 利用者
+- 利用シナリオ
+- システム概要
+- 機能要件
+- 非機能要件
+- データ要件
+- AI 要件
+- 制約事項
+- 将来拡張
+- 用語
 
-以下は本書の対象外とする。
+本書では以下は対象外とする。
 
-* データベース設計
-* API設計
-* UI設計
-* クラス設計
-* テスト設計
+- DB テーブル定義
+- API 詳細仕様
+- UI レイアウト
+- クラス設計
+- 実装方法
+- テストケース
 
 これらは各設計書で定義する。
 
 ---
 
-# 3. Background
+# 3. Document Principles
 
-Lutronシステムのコミッショニングでは、多数のIssueが発生する。
+## 3.1 Purpose of this Document
 
-現場ではMicrosoft TeamsやExcelなどを利用してIssueを管理することが多く、以下の課題が存在する。
+本書は、CIM の要件を定義する最上位ドキュメントである。
 
-* Issue管理が属人的になりやすい。
-* 音声メモからIssueを整理する作業に時間を要する。
-* 写真・動画とIssueの関連付けが煩雑である。
-* Room、RoomType、Area単位でIssueを整理しづらい。
-* Project全体の進捗や未解決Issueを把握しづらい。
+下位設計書は本書を基準として作成する。
 
-これらの課題を解決するため、コミッショニング業務に特化したIssue管理システムとしてCIMを開発する。
+本書と下位設計書の内容に矛盾がある場合は、本書を優先する。
 
 ---
 
-# 4. Goals
+## 3.2 Design Philosophy
 
-本システムの目的を以下に示す。
+本書は、単なる機能一覧ではなく、システム全体の目的および設計思想を定義する。
 
-## 4.1 Issue管理の効率化
+利用者がどのような業務を行い、その業務をどのように支援するかを明確にする。
 
-コミッショニング時に発生するIssueを迅速かつ正確に登録・管理できること。
-
----
-
-## 4.2 入力負荷の軽減
-
-音声入力とローカルAI（Ollama）を利用し、Issue登録作業を支援できること。
-
-AIは入力支援のみを行い、業務データの最終決定は利用者が行う。
+各機能は、実際のコミッショニング業務を基準として定義する。
 
 ---
 
-## 4.3 Project単位での管理
+## 3.3 Intended Readers
 
-Issue、Comment、AttachmentをProject単位で一元管理できること。
+本書は以下の利用者を対象とする。
 
----
+- Product Owner
+- Developer
+- Tester
+- Reviewer
+- AI Assistant
 
-## 4.4 保守性
-
-シンプルで保守しやすい構成を採用し、将来的な機能追加に対応できること。
-
----
-
-## 4.5 プラットフォーム
-
-初期版はWindows 11上で運用する。
-
-将来的にはUbuntu Serverへ移行可能な設計とする。
+本書のみを読んだ場合でも、本システムがどのような目的で利用されるかを理解できることを目標とする。
 
 ---
 
-# 5. Users
+## 3.4 Update Policy
 
-本システムの利用者を以下に定義する。
+本書を更新する際は、個々の機能ではなく、システム全体の利用目的および業務フローとの整合性を優先する。
 
-| 利用者           | 説明                                         | 主な利用機能                                                                               |
-| ------------- | ------------------------------------------ | ------------------------------------------------------------------------------------ |
-| Administrator | システム管理者。Project管理、ユーザー管理および各種マスタデータの管理を行う。 | Administration                                                                       |
-| Engineer      | コミッショニング担当者。Issueの登録・更新・確認を行う。             | Project Selection、Issue Management、AI Draft、Comment Management、Attachment Management |
+新しい要求を追加する場合は、既存の設計思想との整合性を確認する。
 
----
-
-## 5.1 Administrator
-
-Administratorはシステム全体を管理する。
-
-主な責務は以下のとおりとする。
-
-* ユーザーを管理する。
-* Projectを管理する。
-* マスタデータを管理する。
-* システムを運用する。
-
-初期版では、Project管理、ユーザー管理およびマスタデータ管理はCLIまたはCSVを利用して実施する。
-
-Administratorはシステム上のロールであり、必ずしも専任の担当者を意味しない。
-
-プロジェクトの規模に応じて、EngineerがAdministratorを兼任することを許容する。
-
-マスタデータには、Room、RoomTypeなどのシステム運用に必要な管理データを含む。
+本書の更新後は、下位設計書との整合性を確認する。
 
 ---
 
-## 5.2 Engineer
+# 4. Background
 
-Engineerは日常的に本システムを利用する利用者である。
+## 4.1 Project Background
 
-主な責務は以下のとおりとする。
+Commissioning Issue Manager (CIM) は、Lutron 照明制御システムのコミッショニング業務を支援するための Web アプリケーションである。
 
-* Projectを選択する。
-* Issueを登録する。
-* Issueを更新する。
-* IssueのStatusを変更する。
-* Commentを追加する。
-* Attachmentを追加する。
-* AI Draftを利用する。
+コミッショニングでは、ホテル内の設備を実際に操作しながら動作確認を行い、不具合や調整事項を記録する。
 
-Engineerはマスタデータを変更できない。
+現場では短時間で多数の Issue が発生するため、迅速かつ正確に記録できる仕組みが必要となる。
 
 ---
 
-## 5.3 Future Expansion
+## 4.2 Purpose of the System
 
-将来的には以下のロールを追加できる設計とする。
+本システムは、コミッショニング現場で発見した Issue を記録・管理し、対応状況を共有することを目的とする。
 
-| 利用者      | 想定用途           |
-| -------- | -------------- |
-| Viewer   | Issue閲覧専用      |
-| Manager  | Project全体の進捗管理 |
-| Customer | オーナー・施主向け閲覧専用  |
+一般的な Issue 管理システムではなく、コミッショニング業務に特化したシステムとして設計する。
 
-追加ロールは既存設計へ大きな影響を与えないよう、拡張可能な認可設計を採用する。
+---
+
+## 4.3 Target Facilities
+
+本システムでは、以下のような対象を管理する。
+
+- Guest Room
+- Lobby
+- Restaurant
+- Ballroom
+- Corridor
+- Network
+- Control Panel
+
+初期版では、Room 以外の対象は OTHER として管理する。
+
+---
+
+## 4.4 Basic Design Concept
+
+本システムは、現場での入力負荷を最小限にすることを重視する。
+
+利用者が現場で短時間に Issue を登録できるよう、必要最小限の入力で運用できる設計とする。
+
+AI は入力作業を支援するが、最終的な判断および登録は必ず利用者が行う。
+
+(User in Control)
+
+---
+
+# 5. Users and Roles
+
+## 5.1 Overview
+
+本システムでは、以下の利用者を定義する。
+
+- Administrator
+- Engineer
+
+---
+
+## 5.2 Administrator
+
+Administrator は、本システム全体を管理する利用者である。
+
+Administrator は Engineer が利用できるすべての機能を利用できる。
+
+加えて、以下の管理業務を行う。
+
+- Hotel 管理
+- Project 管理
+- User 管理
+- Master Data 管理
+
+初期版では、これらの管理は CLI または CSV により実施する。
+
+将来的には Web UI による管理機能を提供する。
+
+---
+
+## 5.3 Engineer
+
+Engineer は、コミッショニング現場で Issue を登録・管理する利用者である。
+
+Engineer は以下の機能を利用できる。
+
+- Project 選択
+- Issue 登録
+- Issue 更新
+- Status 更新
+- Comment 登録
+- Attachment 登録
+- AI Draft 利用
+
+Engineer は管理者ではなく、Hotel や Master Data の管理は行わない。
+
+---
+
+## 5.4 User Responsibilities
+
+Administrator と Engineer の責務を以下に示す。
+
+|項目|Administrator|Engineer|
+|---|:---:|:---:|
+|Project Selection|✓|✓|
+|Issue Management|✓|✓|
+|Comment|✓|✓|
+|Attachment|✓|✓|
+|AI Draft|✓|✓|
+|Hotel Management|✓|-|
+|Project Management|✓|-|
+|User Management|✓|-|
+|Master Data Management|✓|-|
 
 ---
 
 # 6. System Overview
 
-CIM（Commissioning Issue Manager）は、Lutronシステムのコミッショニング業務において発生するIssueを効率的に管理するためのWebアプリケーションである。
+## 6.1 Overview
 
-本システムはPCおよびスマートフォンから利用できることを前提とする。
+本システムは、コミッショニング現場で発見した Issue を記録・管理するための Web アプリケーションである。
 
-利用者はProjectを選択し、Issueの登録・更新・確認を行う。
+利用者は現場で設備を試験しながら、不具合や調整事項を登録し、対応状況を継続的に管理する。
 
-IssueにはCommentおよびAttachmentを追加できる。
-
-また、音声入力とローカルAI（Ollama）を利用し、Issue登録を支援する。
-
-AIは入力支援のみを担当し、業務データの最終決定は利用者が行う。
+本システムは、Issue のライフサイクル全体を支援する。
 
 ---
 
-## 6.1 System Configuration
+## 6.2 Typical Workflow
 
-初期版のシステム構成を以下に示す。
+代表的な利用フローを以下に示す。
 
-| 項目           | 内容                         |
-| ------------ | -------------------------- |
-| Client       | Web Browser（PC・Smartphone） |
-| Backend      | FastAPI                    |
-| Database     | SQLite                     |
-| AI           | Ollama                     |
-| File Storage | Local Storage              |
-
----
-
-## 6.2 Target Environment
-
-| 項目                      | 内容                           |
-| ----------------------- | ---------------------------- |
-| Development Environment | Windows 11 + WSL2 Ubuntu LTS |
-| Initial Deployment      | Windows 11                   |
-| Future Deployment       | Ubuntu Server                |
-
-システムはOS依存を避け、将来的にUbuntu Serverへ移行可能な設計とする。
+1. Administrator が Hotel を登録する。
+2. Administrator が Hotel に属する Master Data を登録する。
+3. Administrator が Project を作成する。
+4. Engineer が Project を選択する。
+5. Engineer が Issue Create を開く。
+6. Engineer が Target Type を選択する。
+7. Engineer が対象を指定する。
+8. Engineer が音声入力またはテキスト入力を行う。
+9. AI が Issue Draft を生成する。
+10. Engineer が内容を確認・修正する。
+11. Engineer が Issue を登録する。
+12. Engineer が必要に応じて Comment および Attachment を追加する。
+13. Engineer が Status を更新しながら対応状況を管理する。
 
 ---
 
-## 6.3 System Characteristics
+## 6.3 Target Selection
 
-本システムは以下の特徴を持つ。
+Issue は必ず対象を指定して登録する。
 
-* Project単位でIssueを管理する。
-* ローカル環境で動作する。
-* AIは入力支援のみを行う。
-* シンプルで保守しやすい構成を採用する。
-* 将来的な機能拡張を考慮した設計とする。
+初期版では以下の 2 種類を提供する。
+
+- ROOM
+- OTHER
+
+---
+
+### ROOM
+
+ROOM は客室を対象とする。
+
+Engineer は Issue 登録前に Room を選択する。
+
+AI は Room を推定しない。
+
+---
+
+### OTHER
+
+OTHER は Room 以外の対象を表す。
+
+例
+
+- Lobby
+- Ballroom
+- Restaurant
+- Corridor
+- Network
+- Processor
+- Control Panel
+- MDF
+- IDF
+
+Engineer は Target を自由入力する。
+
+入力時は、過去の入力履歴から候補を選択できる。
+
+初期版では履歴を localStorage に保存する。
+
+---
+
+## 6.4 AI Assisted Workflow
+
+AI は入力支援機能として利用する。
+
+利用者が音声入力またはテキスト入力を行い、その内容を基に AI Draft を生成する。
+
+AI Draft は登録前の下書きであり、最終的な登録内容ではない。
+
+利用者は AI Draft を確認し、必要に応じて修正した上で Issue を登録する。
+
+---
+
+## 6.5 User in Control
+
+本システムでは User in Control を基本方針とする。
+
+AI は利用者の作業を支援するものであり、最終的な判断を行わない。
+
+利用者は AI が生成した内容を必ず確認し、必要に応じて修正してから登録する。
+
+---
+
+## 6.6 Input Assistance
+
+Issue 登録時の入力負荷を軽減するため、入力補助機能を提供する。
+
+初期版では以下を保存対象とする。
+
+- Target Type
+- Room
+- Category
+
+前回利用した値を初期値として表示する。
+
+OTHER の Target は入力履歴を保持し、候補から選択できる。
+
+---
+
+## 6.7 Design Principles
+
+本システムは以下の設計方針に基づいて設計する。
+
+- User in Control
+- Simplicity First
+- Mobile First
+- AI Assistance Only
+- Master Data First
+
+各設計書は、この設計方針を基準として作成する。
 
 ---
 
 # 7. Functional Requirements
 
-本章では、本システムが満たすべき機能要件を定義する。
+## 7.1 Overview
+
+本システムは、コミッショニング現場における Issue のライフサイクル全体を支援する。
+
+初期版では、Issue の登録、更新および進捗管理を中心機能とする。
 
 ---
 
-## 7.1 Authentication
+## 7.2 Authentication
 
-### 概要
+利用者は認証後に本システムを利用する。
 
-利用者認証を行う。
+認証では以下を使用する。
 
-### Requirements
+- Username
+- Password
 
-| ID     | Requirement                 |
-| ------ | --------------------------- |
-| FR-001 | 利用者はログインできなければならない。         |
-| FR-002 | 認証済み利用者のみシステムを利用できなければならない。 |
-| FR-003 | 利用者はログアウトできなければならない。        |
+Username はログイン ID であり、メールアドレス形式も利用できる。
 
----
-
-## 7.2 Project Selection
-
-### 概要
-
-Engineerが作業対象となるProjectを選択する。
-
-### Requirements
-
-| ID     | Requirement                        |
-| ------ | ---------------------------------- |
-| FR-004 | Engineerは担当Projectを選択できなければならない。   |
-| FR-005 | Engineerは選択中のProjectを変更できなければならない。 |
-| FR-006 | Issueは選択したProjectに属さなければならない。      |
+利用者は認証成功後に Project Selection を表示する。
 
 ---
 
-## 7.3 Issue Management
+## 7.3 Project Selection
 
-### 概要
+利用者は作業対象となる Project を選択する。
 
-Issueの登録・更新・参照を行う。
+選択した Project を基準として Issue を管理する。
 
-### Requirements
+Project は Hotel に属する案件を表す。
 
-| ID     | Requirement                         |
-| ------ | ----------------------------------- |
-| FR-007 | EngineerはIssue一覧を表示できなければならない。      |
-| FR-008 | EngineerはIssue詳細を表示できなければならない。      |
-| FR-009 | EngineerはIssueを登録できなければならない。        |
-| FR-010 | EngineerはIssueを更新できなければならない。        |
-| FR-011 | EngineerはIssueのStatusを変更できなければならない。 |
-| FR-012 | 初期版ではIssue削除機能を提供しない。               |
+Project の例
+
+- New Construction
+- Renovation
+- Maintenance
 
 ---
 
-## 7.4 AI Draft
+## 7.4 Issue Management
 
-### 概要
+Issue は本システムの中心となる管理対象である。
 
-AIによるIssue登録支援を行う。
+利用者は以下を実施できる。
 
-### Requirements
+- Issue 登録
+- Issue 更新
+- Issue 一覧表示
+- Issue 詳細表示
+- Status 更新
 
-| ID     | Requirement                                    |
-| ------ | ---------------------------------------------- |
-| FR-013 | Engineerは音声入力からAI Draftを生成できなければならない。          |
-| FR-014 | AIはTargetTypeを推定しなければならない。                     |
-| FR-015 | AIはTargetを推定しなければならない。                         |
-| FR-016 | AIはCategoryを推定しなければならない。                       |
-| FR-017 | AIはDescriptionを生成しなければならない。                    |
-| FR-018 | AIはIssueを保存してはならない。                            |
-| FR-019 | EngineerはAI Draftを確認・修正した後にIssueを登録できなければならない。 |
+Issue は Project に属する。
+
+Issue は Room または OTHER を対象として登録する。
 
 ---
 
-## 7.5 Comment Management
+## 7.5 Target Type
 
-### 概要
+初期版では以下の Target Type を提供する。
 
-IssueへCommentを追加する。
-
-### Requirements
-
-| ID     | Requirement                    |
-| ------ | ------------------------------ |
-| FR-020 | EngineerはCommentを追加できなければならない。 |
-| FR-021 | Commentは履歴として保持しなければならない。      |
-| FR-022 | 初期版ではComment編集機能を提供しない。        |
-| FR-023 | 初期版ではComment削除機能を提供しない。        |
+- ROOM
+- OTHER
 
 ---
 
-## 7.6 Attachment Management
+### ROOM
 
-### 概要
+ROOM は客室を対象とする。
 
-Issueへ写真・動画を添付する。
+Room は利用者が UI で選択する。
 
-### Requirements
-
-| ID     | Requirement                       |
-| ------ | --------------------------------- |
-| FR-024 | EngineerはAttachmentを追加できなければならない。 |
-| FR-025 | EngineerはAttachmentを削除できなければならない。 |
-| FR-026 | 初期版ではAttachment編集機能を提供しない。        |
+AI は Room を推定しない。
 
 ---
 
-## 7.7 Administration
+### OTHER
 
-### 概要
+OTHER は Room 以外の対象を表す。
 
-Administratorがシステム管理機能を利用する。
+Target は利用者が自由入力する。
 
-Administrationは以下の機能で構成する。
+入力時は過去の履歴を候補として表示する。
 
-* Project Management
-* User Management
-* Master Data Management
+初期版では履歴を localStorage に保存する。
 
 ---
 
-### 7.7.1 Project Management
+## 7.6 AI Draft
 
-| ID     | Requirement                         |
-| ------ | ----------------------------------- |
-| FR-027 | AdministratorはProjectを登録できなければならない。 |
-| FR-028 | AdministratorはProjectを更新できなければならない。 |
-| FR-029 | AdministratorはProjectを管理できなければならない。 |
-| FR-030 | 初期版ではCLIまたはCSVによる管理を行わなければならない。     |
+AI Draft は Issue 登録時の入力支援機能である。
 
----
+利用者は音声入力またはテキスト入力を行い、AI Draft を生成する。
 
-### 7.7.2 User Management
+AI は入力内容を整理し、Issue Draft を作成する。
 
-| ID     | Requirement                     |
-| ------ | ------------------------------- |
-| FR-031 | Administratorは利用者を管理できなければならない。 |
-| FR-032 | 初期版ではCLIまたはCSVによる管理を行わなければならない。 |
+利用者は AI Draft を確認し、必要に応じて修正した後に登録する。
+
+AI Draft は登録前の下書きであり、自動登録は行わない。
 
 ---
 
-### 7.7.3 Master Data Management
+## 7.7 AI Generated Information
 
-対象となるマスタデータは以下を含む。
+AI は以下の情報を生成する。
 
-* Room
-* RoomType
+- Category
+- Description
 
-### Requirements
+AI は以下を決定しない。
 
-| ID     | Requirement                        |
-| ------ | ---------------------------------- |
-| FR-033 | Administratorはマスタデータを管理できなければならない。 |
-| FR-034 | 初期版ではCLIまたはCSVによる管理を行わなければならない。    |
-| FR-035 | 将来的に管理対象マスタを追加できる設計としなければならない。     |
+- Room
+- Target Type
+- Target
+
+これらは利用者が指定する。
+
+---
+
+## 7.8 Comments
+
+利用者は Issue に Comment を追加できる。
+
+Comment は Issue の対応履歴を記録するために利用する。
+
+Comment は時系列で管理する。
+
+---
+
+## 7.9 Attachments
+
+利用者は Issue に画像および動画を添付できる。
+
+初期版では複数ファイルの添付をサポートする。
+
+Attachment は Issue に関連付けて管理する。
+
+---
+
+## 7.10 Status Management
+
+Issue は以下の Status を持つ。
+
+- Open
+- In Progress
+- Resolved
+- Closed
+
+Status は対応状況を表す。
+
+利用者は対応状況に応じて Status を更新する。
+
+---
+
+## 7.11 Search
+
+利用者は Issue を検索できる。
+
+初期版では以下を検索条件として提供する。
+
+- Keyword
+- Status
+- Category
+- Target Type
+
+検索結果は選択中の Project を対象とする。
+
+---
+
+## 7.12 Input Assistance
+
+入力負荷を軽減するため、入力補助機能を提供する。
+
+初期版では以下を前回入力値として保持する。
+
+- Target Type
+- Room
+- Category
+
+OTHER の Target は入力履歴を保持し、候補から選択できる。
+
+---
+
+## 7.13 Master Data Management
+
+初期版では以下を Master Data とする。
+
+- Hotel
+- RoomType
+- Room
+- User
+
+Master Data の登録および更新は Administrator が実施する。
+
+初期版では CLI または CSV により管理する。
+
+---
+
+## 7.14 Administration
+
+Administrator は以下を管理する。
+
+- Hotel
+- Project
+- User
+- Master Data
+
+初期版では Web UI による管理機能は提供しない。
+
+---
+
+## 7.15 Auditability
+
+Issue の対応履歴を追跡できるようにする。
+
+以下の情報を保持する。
+
+- Status
+- Comment
+- Attachment
+- 更新日時
+- 更新者
+
+これにより、コミッショニング作業の進捗を継続的に管理できる。
 
 ---
 
 # 8. Non-functional Requirements
 
-本章では、本システムが満たすべき非機能要件を定義する。
-
----
-
 ## 8.1 Performance
 
-### Requirements
+通常利用において、画面操作に対して利用者が待ち時間を感じない応答性能を提供する。
 
-| ID      | Requirement                               |
-| ------- | ----------------------------------------- |
-| NFR-001 | 一般的な業務利用において快適に操作できる応答性能を提供しなければならない。     |
-| NFR-002 | 同一プロジェクト内のIssue一覧を適切な時間内に表示できなければならない。    |
-| NFR-003 | AI Draft生成中であっても、システム全体の操作性を著しく損なってはならない。 |
+AI Draft は AI の応答時間に依存するが、利用者に処理中であることを明確に表示する。
 
 ---
 
 ## 8.2 Availability
 
-### Requirements
+初期版はローカルネットワーク内で利用する。
 
-| ID      | Requirement                   |
-| ------- | ----------------------------- |
-| NFR-004 | システムはローカル環境で安定して動作しなければならない。  |
-| NFR-005 | システム障害発生時には、安全に再起動できなければならない。 |
+クラウドサービスへの常時接続を前提としない。
 
 ---
 
-## 8.3 Maintainability
+## 8.3 Usability
 
-### Requirements
+コミッショニング現場での利用を想定し、短時間で Issue を登録できる UI とする。
 
-| ID      | Requirement                 |
-| ------- | --------------------------- |
-| NFR-006 | システムは保守しやすい構成でなければならない。     |
-| NFR-007 | レイヤードアーキテクチャを採用しなければならない。   |
-| NFR-008 | 業務ロジックとデータアクセスを分離しなければならない。 |
-| NFR-009 | 将来的な機能追加に対応できる構成でなければならない。  |
+入力項目は必要最小限とする。
 
 ---
 
-## 8.4 Security
+## 8.4 Portability
 
-### Requirements
+初期版は Windows 上で動作する。
 
-| ID      | Requirement                    |
-| ------- | ------------------------------ |
-| NFR-010 | 認証されていない利用者はシステムを利用できてはならない。   |
-| NFR-011 | 利用者は自身の権限に応じた機能のみ利用できなければならない。 |
-| NFR-012 | AIは利用者の承認なしに業務データを変更してはならない。   |
+将来的に Linux 環境へ移行できる設計とする。
+
+Windows 固有機能への依存は避ける。
 
 ---
 
-## 8.5 Usability
+## 8.5 Maintainability
 
-### Requirements
+各レイヤーの責務を明確に分離する。
 
-| ID      | Requirement                         |
-| ------- | ----------------------------------- |
-| NFR-013 | PCおよびスマートフォンから利用できなければならない。         |
-| NFR-014 | コミッショニング現場で直感的に操作できるUIを提供しなければならない。 |
-| NFR-015 | 音声入力を利用してIssue登録作業を支援できなければならない。    |
+実装は保守性を重視した構成とする。
 
 ---
 
-## 8.6 Portability
+## 8.6 Extensibility
 
-### Requirements
+初期版ではシンプルな構成を採用する。
 
-| ID      | Requirement                         |
-| ------- | ----------------------------------- |
-| NFR-016 | 初期版はWindows 11で動作しなければならない。         |
-| NFR-017 | 将来的にUbuntu Serverへ移行できる設計でなければならない。 |
-| NFR-018 | OS依存の実装を最小限に抑えなければならない。             |
+将来的な機能追加に対応できる設計とする。
+
+例
+
+- Location
+- Dashboard
+- Web Administration
+- Cloud Deployment
+- PostgreSQL
 
 ---
 
 # 9. Data Requirements
 
-本章では、本システムが管理するデータに関する要件を定義する。
+## 9.1 Overview
+
+本システムでは、Hotel ごとに Project および Master Data を管理する。
+
+Issue は Project に属し、コミッショニング中に発見した不具合または調整事項を表す。
+
+データモデルは、現場での運用を重視し、必要最小限の構成を採用する。
 
 ---
 
-## 9.1 Master Data
+## 9.2 Master Data
 
-本システムでは以下のマスタデータを管理する。
+初期版では以下を Master Data とする。
 
-* User
-* Project
-* RoomType
-* Room
+- Hotel
+- RoomType
+- Room
+- User
 
-### Requirements
+Administrator は Project 作成前に Master Data を登録する。
 
-| ID     | Requirement            |
-| ------ | ---------------------- |
-| DR-001 | Userを管理できなければならない。     |
-| DR-002 | Projectを管理できなければならない。  |
-| DR-003 | RoomTypeを管理できなければならない。 |
-| DR-004 | Roomを管理できなければならない。     |
-
----
-
-## 9.2 Business Data
-
-本システムでは以下の業務データを管理する。
-
-* Issue
-* Comment
-* Attachment
-
-### Requirements
-
-| ID     | Requirement              |
-| ------ | ------------------------ |
-| DR-005 | Issueを管理できなければならない。      |
-| DR-006 | Commentを管理できなければならない。    |
-| DR-007 | Attachmentを管理できなければならない。 |
+初期版では CLI または CSV を利用して登録する。
 
 ---
 
 ## 9.3 Data Relationships
 
-データは以下の関係を持つ。
+本システムでは、以下の関係を採用する。
 
-* Projectは複数のIssueを持つ。
-* Issueは複数のCommentを持つ。
-* Issueは複数のAttachmentを持つ。
-* RoomはRoomTypeに属する。
+```text
+Hotel
+├── RoomType
+│     └── Room
+├── User
+└── Project
+        └── Issue
+              ├── Comment
+              └── Attachment
+```
 
-### Requirements
+Relationship は以下のとおりである。
 
-| ID     | Requirement                       |
-| ------ | --------------------------------- |
-| DR-008 | Issueは必ず1つのProjectに属さなければならない。    |
-| DR-009 | Commentは必ず1つのIssueに属さなければならない。    |
-| DR-010 | Attachmentは必ず1つのIssueに属さなければならない。 |
-| DR-011 | Roomは必ず1つのRoomTypeに属さなければならない。    |
+|Parent|Child|Relationship|
+|---|---|---|
+|Hotel|RoomType|1 : N|
+|Hotel|Room|1 : N|
+|Hotel|Project|1 : N|
+|Hotel|User|1 : N|
+|RoomType|Room|1 : N|
+|Project|Issue|1 : N|
+|Issue|Comment|1 : N|
+|Issue|Attachment|1 : N|
+
+Room は Hotel に属する。
+
+Room は Project に属さない。
+
+Project は Hotel に属する案件である。
+
+Issue は Project に属し、対象を表す Room または OTHER を保持する。
 
 ---
 
-## 9.4 Data Storage
+## 9.4 Room
 
-### Requirements
+Room は Hotel 内の客室を表す。
 
-| ID     | Requirement                       |
-| ------ | --------------------------------- |
-| DR-012 | 業務データはSQLiteへ保存しなければならない。         |
-| DR-013 | 添付ファイルはLocal Storageへ保存しなければならない。 |
-| DR-014 | 添付ファイルの管理情報はSQLiteで管理しなければならない。   |
-| DR-015 | データの整合性を維持しなければならない。              |
+Room は必ず RoomType を参照する。
+
+Room は Master Data であり、Project ごとに作成しない。
+
+---
+
+## 9.5 RoomType
+
+RoomType は Hotel に属する。
+
+RoomType は同一 Hotel 内の Room の分類を表す。
+
+例
+
+- Standard Twin
+- Deluxe Twin
+- Suite
+
+---
+
+## 9.6 Project
+
+Project は Hotel に対するコミッショニング案件を表す。
+
+例
+
+- New Construction
+- Renovation
+- Maintenance
+
+Project は Room を所有しない。
+
+---
+
+## 9.7 Issue
+
+Issue は Project に属する。
+
+Issue はコミッショニング時に発見した不具合または調整事項を表す。
+
+Issue は以下の対象を持つ。
+
+- ROOM
+- OTHER
+
+---
+
+### ROOM
+
+Room を参照する。
+
+---
+
+### OTHER
+
+Target を文字列として保持する。
+
+例
+
+- Lobby
+- Ballroom
+- Network
+- MDF
+- IDF
+- Processor
+
+---
+
+## 9.8 Location
+
+初期版では Location テーブルは作成しない。
+
+Room 以外の対象は OTHER として管理する。
+
+Location は将来的な拡張候補とする。
+
+---
+
+## 9.9 Target Type
+
+初期版では以下を提供する。
+
+- ROOM
+- OTHER
+
+将来的に必要となった場合のみ、新しい Target Type を追加する。
+
+---
+
+## 9.10 Data Retention
+
+Issue、Comment および Attachment はコミッショニング履歴として保持する。
+
+初期版では物理削除を行わない。
 
 ---
 
 # 10. AI Requirements
 
-本章では、本システムにおけるAI利用に関する要件を定義する。
+## 10.1 Purpose
+
+AI はコミッショニング作業を支援する入力補助機能として利用する。
+
+AI は利用者の代わりに判断するものではない。
 
 ---
 
-## 10.1 AI Usage Policy
+## 10.2 Responsibilities
 
-本システムではローカルLLM（Ollama）を利用する。
+AI は以下を担当する。
 
-AIは利用者の入力を支援するために利用し、業務上の最終判断は常に利用者が行う。
-
----
-
-## 10.2 AI Requirements
-
-| ID      | Requirement                  |
-| ------- | ---------------------------- |
-| AIR-001 | AIは音声入力を解析できなければならない。        |
-| AIR-002 | AIはTargetTypeを推定できなければならない。  |
-| AIR-003 | AIはTargetを推定できなければならない。      |
-| AIR-004 | AIはCategoryを推定できなければならない。    |
-| AIR-005 | AIはDescriptionを生成できなければならない。 |
-| AIR-006 | AIはIssueを保存してはならない。          |
-| AIR-007 | AIは利用者の承認なしに業務データを変更してはならない。 |
-| AIR-008 | AIによる生成結果は利用者が編集できなければならない。  |
+- 音声入力の解析
+- テキスト入力の解析
+- Category の提案
+- Description の生成
 
 ---
 
-# 11. Operational Requirements
+## 10.3 Out of Scope
 
-本章では、システム運用に関する要件を定義する。
+AI は以下を行わない。
 
----
+- Room の決定
+- Target Type の決定
+- Target の決定
+- Issue の自動登録
+- Status の変更
 
-## 11.1 Initial Operation
-
-初期版はWindows 11環境で運用する。
-
----
-
-## 11.2 System Management
-
-Administratorは以下を管理できなければならない。
-
-* Project
-* User
-* Master Data
-
-初期版ではCLIまたはCSVを利用して管理を行う。
+これらは利用者が行う。
 
 ---
 
-## 11.3 Backup
+## 10.4 User in Control
 
-| ID     | Requirement               |
-| ------ | ------------------------- |
-| OR-001 | システムデータをバックアップできなければならない。 |
-| OR-002 | バックアップデータから復元できなければならない。  |
+AI が生成した内容は Draft として扱う。
 
----
+利用者は必ず内容を確認し、必要に応じて修正してから登録する。
 
-# 12. Constraints
-
-本章では、初期版におけるシステム制約を定義する。
-
-| ID    | Constraint                                      |
-| ----- | ----------------------------------------------- |
-| C-001 | 初期版ではSQLiteを利用する。                               |
-| C-002 | 初期版ではローカルストレージへ添付ファイルを保存する。                     |
-| C-003 | 初期版ではProject、UserおよびMaster DataはCLIまたはCSVで管理する。 |
-| C-004 | 初期版ではIssue削除機能を提供しない。                           |
-| C-005 | 初期版ではComment編集・削除機能を提供しない。                      |
-| C-006 | 初期版ではAttachment編集機能を提供しない。                      |
+AI が生成した内容をそのまま登録することを前提としない。
 
 ---
 
-# 13. Future Enhancements
+## 10.5 AI Failure
+
+AI Draft を生成できない場合でも、利用者は手動で Issue を登録できる。
+
+AI は必須機能ではなく、入力支援機能である。
+
+---
+
+# 11. Constraints
+
+## 11.1 Initial Release
+
+初期版では以下を採用する。
+
+- FastAPI
+- SQLite
+- Local File Storage
+- Ollama
+- Local AI
+- Browser UI
+
+---
+
+## 11.2 Excluded Features
+
+初期版では以下を対象外とする。
+
+- Web による Master Data 管理
+- Location 管理
+- Dashboard
+- Report 機能
+- Cloud 運用
+- PostgreSQL
+- Docker 必須運用
+
+これらは将来的な拡張とする。
+
+---
+
+## 11.3 Design Constraints
+
+初期版ではシンプルな構成を優先する。
+
+過度な汎用化は行わず、実際のコミッショニング業務に必要な機能を優先して実装する。
+
+将来拡張を考慮しつつ、不要な複雑化を避ける。
+
+---
+
+# 12. Future Enhancements
+
+## 12.1 Basic Policy
+
+初期版では、コミッショニング現場で必要となる機能を優先して提供する。
+
+将来的な拡張を考慮した設計とするが、初期版では実装しない機能は要求として定義しない。
+
+---
+
+## 12.2 Functional Enhancements
 
 将来的に以下の機能追加を検討する。
 
-* Viewerロール
-* Managerロール
-* Customerロール
-* Web画面によるProject管理
-* Web画面によるUser管理
-* Web画面によるMaster Data管理
-* Ubuntu Serverへのデプロイ
-* Docker対応
-* クラウド環境への展開
-* AI機能の高度化
-
-これらは初期版の要件には含めない。
+- Web UI による Master Data Management
+- Location Management
+- Dashboard
+- Report Generation
+- Statistics
+- Advanced Search
+- Notification
+- Offline Support
+- Multi-language Support
+- Dark Mode
+- Tablet Optimized UI
 
 ---
 
-# 14. Glossary
+## 12.3 AI Enhancements
 
-| 用語            | 説明                                 |
-| ------------- | ---------------------------------- |
-| AI Draft      | AIが生成したIssue登録候補                   |
-| Attachment    | Issueへ添付する写真・動画などのファイル             |
-| Category      | Issueの分類                           |
-| Comment       | Issueに対するコメント                      |
-| Commissioning | システムの現地試験・調整・引き渡し作業                |
-| Engineer      | コミッショニング担当者                        |
-| Hotel         | Projectの対象となる施設                    |
-| Issue         | コミッショニング中に発見された課題・不具合・確認事項         |
-| Local Storage | 添付ファイルを保存するローカルディレクトリ              |
-| Master Data   | Project、User、RoomType、Roomなどの基礎データ |
-| Ollama        | ローカルで動作するLLM実行環境                   |
-| Project       | コミッショニング対象となる案件                    |
-| Room          | 建物内の部屋                             |
-| RoomType      | Roomの分類                            |
-| Status        | Issueの進捗状態                         |
-| Target        | Issueの対象機器・対象箇所                    |
-| TargetType    | Targetの分類                          |
-| User          | システム利用者                            |
+将来的に以下の AI 機能を検討する。
+
+- Category 推定精度の向上
+- Description 自動補完
+- 類似 Issue の提案
+- ナレッジ検索
+- Issue 要約
+- Issue 分析
+
+AI は将来も入力支援を目的とし、利用者に代わって最終判断を行わない。
+
+---
+
+## 12.4 Deployment Enhancements
+
+将来的に以下の運用を検討する。
+
+- Docker
+- PostgreSQL
+- Linux Server
+- Cloud Deployment
+- Remote Access
+
+---
+
+# 13. Glossary
+
+|Term|Description|
+|---|---|
+|Administrator|システム管理者。Engineer が利用できるすべての機能に加え、Hotel、Project、User および Master Data を管理する。|
+|AI Draft|AI が生成する登録前の Issue 下書き。利用者による確認および修正を前提とする。|
+|Attachment|Issue に添付する画像または動画。|
+|Category|Issue を分類するための分類情報。|
+|Comment|Issue に対する対応履歴または補足情報。|
+|Commissioning|設備を実際に試験し、設計どおり動作することを確認する作業。|
+|Engineer|コミッショニング作業を実施する利用者。|
+|Hotel|Project および Master Data を管理する単位。|
+|Issue|コミッショニング時に発見した不具合または調整事項。|
+|Master Data|Hotel、RoomType、Room および User を表す基礎データ。|
+|OTHER|Room 以外の対象を表す Target Type。|
+|Project|Hotel に対するコミッショニング案件。|
+|Room|Hotel 内の客室。RoomType を参照する。|
+|RoomType|Hotel 内で利用する客室種別。|
+|Status|Issue の対応状況。Open、In Progress、Resolved および Closed を持つ。|
+|Target|Issue の対象。ROOM の場合は Room、OTHER の場合は自由入力した対象を表す。|
+|Target Type|Issue の対象種別。初期版では ROOM および OTHER を提供する。|
+|User in Control|AI は入力支援のみを行い、最終的な判断および登録は利用者が行うという設計思想。|
 
 ---
 

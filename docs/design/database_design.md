@@ -1,17 +1,19 @@
 # CIM Database Design
 
-**Document Version:** 1.0
-**Status:** Draft
-**Last Updated:** 2026-06-30
-**Author:** Masato Nagata
+- **Document Version:** 1.2
+- **Status:** Draft
+- **Last Updated:** 2026-07-09
+- **Author:** Masato Nagata
 
 ---
 
 # Revision History
 
-| Version | Date       | Description     |
-| ------- | ---------- | --------------- |
-| 1.0     | 2026-06-30 | Initial version |
+|Version|Date|Description|
+|---|---|---|
+|1.0|2026-06-30|Initial version|
+|1.1|2026-07-03|Remove code columns, remove RoomType.description and add password_hash to User.|
+|1.2|2026-07-09|Align database design with Requirements v1.2. Simplify Target Type to ROOM and OTHER, remove floor from Room, and clarify Issue target relationships.|
 
 ---
 
@@ -34,11 +36,11 @@
 
 # 1. Purpose
 
-本書は、CIM（Commissioning Issue Manager）のデータベース設計を定義することを目的とする。
+本書は、CIM(Commissioning Issue Manager)のデータベース設計を定義することを目的とする。
 
 本書では、システムで利用するテーブル、リレーション、制約、インデックス、およびデータ管理方針を定義する。
 
-本書を基に、SQLAlchemyモデル、マイグレーション、およびRepository実装を行う。
+本書を基に、SQLAlchemy モデル、マイグレーション、および Repository 実装を行う。
 
 ---
 
@@ -46,24 +48,24 @@
 
 本書では以下を対象とする。
 
-* データベース全体構成
-* Master Dataテーブル
-* Business Dataテーブル
-* テーブル間リレーション
-* 主キー・外部キー
-* 一意制約
-* CHECK制約
-* インデックス
-* Service層で検証する業務ルール
+- データベース全体構成
+- Master Data テーブル
+- Business Data テーブル
+- テーブル間リレーション
+- 主キー・外部キー
+- 一意制約
+- CHECK 制約
+- インデックス
+- Service 層で検証する業務ルール
 
 以下は対象外とする。
 
-* API仕様
-* DTO設計
-* UI設計
-* Service実装詳細
-* Repository実装詳細
-* テストケース
+- API 仕様
+- DTO 設計
+- UI 設計
+- Service 実装詳細
+- Repository 実装詳細
+- テストケース
 
 これらは各設計書で定義する。
 
@@ -73,23 +75,23 @@
 
 本書は以下のドキュメントを参照する。
 
-| ドキュメント                 | 説明                      |
-| ---------------------- | ----------------------- |
-| requirements.md        | 要件定義書                   |
-| basic_design.md        | 基本設計書                   |
-| project_conventions.md | プロジェクト共通ルール             |
-| ADR-002                | TargetType Definition   |
-| ADR-003                | Category Definition     |
-| ADR-004                | Room Model Design       |
-| ADR-005                | Issue as Aggregate Root |
+|ドキュメント|説明|
+|---|---|
+|requirements.md|要件定義書|
+|basic_design.md|基本設計書|
+|project_conventions.md|プロジェクト共通ルール|
+|ADR-002|TargetType Definition|
+|ADR-003|Category Definition|
+|ADR-004|Room Model Design|
+|ADR-005|Issue as Aggregate Root|
 
 ---
 
 # 4. Database Overview
 
-初期版ではSQLiteを利用する。
+初期版では SQLite を利用する。
 
-将来的にはPostgreSQLへ移行できる設計とする。
+将来的には PostgreSQL へ移行できる設計とする。
 
 ---
 
@@ -97,16 +99,16 @@
 
 本システムでは以下のテーブルを定義する。
 
-| 分類            | テーブル        | 説明         |
-| ------------- | ----------- | ---------- |
-| Master Data   | users       | 利用者        |
-| Master Data   | hotels      | ホテル        |
-| Master Data   | projects    | Project    |
-| Master Data   | room_types  | RoomType   |
-| Master Data   | rooms       | Room       |
-| Business Data | issues      | Issue      |
-| Business Data | comments    | Comment    |
-| Business Data | attachments | Attachment |
+|分類|テーブル|説明|
+|---|---|---|
+|Master Data|users|ユーザー|
+|Master Data|hotels|ホテル|
+|Master Data|projects|Project|
+|Master Data|room_types|RoomType|
+|Master Data|rooms|Room|
+|Business Data|issues|Issue|
+|Business Data|comments|Comment|
+|Business Data|attachments|Attachment|
 
 ---
 
@@ -120,13 +122,17 @@ User
 
 Hotel
  ├── Project
- └── RoomType
-      └── Room
+ ├── RoomType
+ └── Room
 
 Project
  └── Issue
       ├── Comment
-      └── Attachment
+      ├── Attachment
+      └── Room (optional reference)
+
+RoomType
+ └── Room
 ```
 
 ---
@@ -139,19 +145,19 @@ Project
 
 システム運用の基礎となる管理データである。
 
-* User
-* Hotel
-* Project
-* RoomType
-* Room
+- User
+- Hotel
+- Project
+- RoomType
+- Room
 
 ### Business Data
 
 コミッショニング業務で日々登録・更新されるデータである。
 
-* Issue
-* Comment
-* Attachment
+- Issue
+- Comment
+- Attachment
 
 ---
 
@@ -159,9 +165,9 @@ Project
 
 ## 5.1 Database
 
-初期版ではSQLiteを利用する。
+初期版では SQLite を利用する。
 
-ただし、将来的にPostgreSQLへ移行できるよう、DB依存の実装を最小限に抑える。
+ただし、将来的に PostgreSQL へ移行できるよう、DB 依存の実装を最小限に抑える。
 
 ---
 
@@ -179,11 +185,11 @@ id INTEGER PRIMARY KEY AUTOINCREMENT
 
 作成日時・更新日時は以下の方針とする。
 
-| カラム         | 用途           |
-| ----------- | ------------ |
-| created_at  | 作成日時         |
-| updated_at  | 更新日時         |
-| uploaded_at | ファイルアップロード日時 |
+|カラム|用途|
+|---|---|
+|created_at|作成日時|
+|updated_at|更新日時|
+|uploaded_at|ファイルアップロード日時|
 
 更新されない履歴データでは、`updated_at` を持たない場合がある。
 
@@ -193,43 +199,44 @@ id INTEGER PRIMARY KEY AUTOINCREMENT
 
 初期版では、業務上重要なデータの削除は最小限とする。
 
-| データ         | 削除方針        |
-| ----------- | ----------- |
-| Issue       | 削除しない       |
-| Comment     | 削除しない       |
-| Attachment  | 削除可能        |
-| Master Data | 初期版では画面削除なし |
+|データ|削除方針|
+|---|---|
+|Issue|削除しない|
+|Comment|削除しない|
+|Attachment|削除可能|
+|Master Data|初期版では画面削除なし|
 
 ---
 
 ## 5.5 Master Data Management
 
-初期版では、Master DataはCLIまたはCSVで管理する。
+初期版では、Master Data は CLI または CSV で管理する。
 
-Web画面によるMaster Data管理は初期版では実装しない。
+Web 画面による Master Data 管理は初期版では実装しない。
 
 ---
 
 ## 5.6 Business Rule Validation
 
-DB制約だけで表現しにくい業務ルールはService層で検証する。
+DB 制約だけで表現しにくい業務ルールは Service 層で検証する。
 
 例：
 
-* 同一Hotel内でRoom Numberが重複しないこと。
-* TargetTypeと対象カラムの整合性。
-* Issue作成時の必須項目。
-* Attachmentのファイル種別・サイズ制限。
+- 同一 Hotel 内で Room Numberが重複しないこと。
+- Issue の Room 参照は任意であること。
+- Target Type と対象カラムの整合性。
+- Issue 作成時の必須項目。
+- Attachment のファイル種別・サイズ制限。
 
 ---
 
 ## 5.7 File Storage
 
-添付ファイル本体はDBには保存しない。
+添付ファイル本体は DB には保存しない。
 
-DBにはファイルのメタデータのみ保存する。
+DB にはファイルのメタデータのみ保存する。
 
-ファイル本体はLocal Storageへ保存する。
+ファイル本体は Local Storage へ保存する。
 
 `file_path` は絶対パスではなく相対パスで保存する。
 
@@ -237,39 +244,40 @@ DBにはファイルのメタデータのみ保存する。
 
 # 6. Master Data Tables
 
-本章では、システムの基礎となるMaster Dataテーブルを定義する。
+本章では、システムの基礎となる Master Data テーブルを定義する。
 
 ---
 
 # 6.1 users
 
-システム利用者を管理する。
+システムユーザーを管理する。
 
 ## Purpose
 
-認証および認可の対象となる利用者情報を保持する。
+認証および認可の対象となるユーザー情報を保持する。
 
 ## Columns
 
-| カラム          | 型        | NULL | 説明                       |
-| ------------ | -------- | ---- | ------------------------ |
-| id           | INTEGER  | No   | 主キー                      |
-| username     | TEXT     | No   | ログイン名                    |
-| display_name | TEXT     | No   | 表示名                      |
-| role         | TEXT     | No   | Administrator / Engineer |
-| created_at   | DATETIME | No   | 作成日時                     |
-| updated_at   | DATETIME | No   | 更新日時                     |
+|カラム|型|NULL|説明|
+|---|---|---|---|
+|id|INTEGER|No|主キー|
+|username|TEXT|No|ログイン ID|
+|password_hash|TEXT|No|パスワードハッシュ|
+|display_name|TEXT|No|表示名|
+|role|TEXT|No|Administrator / Engineer|
+|created_at|DATETIME|No|作成日時|
+|updated_at|DATETIME|No|更新日時|
 
 ## Constraints
 
-* username は一意とする。
-* role は定義済みRoleのみ許可する。
+- username は一意とする。
+- role は定義済みRoleのみ許可する。
 
 ---
 
 # 6.2 hotels
 
-Hotelを管理する。
+Hotel を管理する。
 
 ## Purpose
 
@@ -277,23 +285,22 @@ Hotelを管理する。
 
 ## Columns
 
-| カラム        | 型        | NULL | 説明     |
-| ---------- | -------- | ---- | ------ |
-| id         | INTEGER  | No   | 主キー    |
-| name       | TEXT     | No   | ホテル名   |
-| code       | TEXT     | No   | ホテルコード |
-| created_at | DATETIME | No   | 作成日時   |
-| updated_at | DATETIME | No   | 更新日時   |
+|カラム|型|NULL|説明|
+|---|---|---|---|
+|id|INTEGER|No|主キー|
+|name|TEXT|No|ホテル名|
+|created_at|DATETIME|No|作成日時|
+|updated_at|DATETIME|No|更新日時|
 
 ## Constraints
 
-* code は一意とする。
+なし
 
 ---
 
 # 6.3 projects
 
-Projectを管理する。
+Project を管理する。
 
 ## Purpose
 
@@ -301,150 +308,145 @@ Projectを管理する。
 
 ## Columns
 
-| カラム        | 型        | NULL | 説明         |
-| ---------- | -------- | ---- | ---------- |
-| id         | INTEGER  | No   | 主キー        |
-| hotel_id   | INTEGER  | No   | Hotel      |
-| name       | TEXT     | No   | Project名   |
-| code       | TEXT     | No   | Projectコード |
-| created_at | DATETIME | No   | 作成日時       |
-| updated_at | DATETIME | No   | 更新日時       |
+|カラム|型|NULL|説明|
+|---|---|---|---|
+|id|INTEGER|No|主キー|
+|hotel_id|INTEGER|No|Hotel|
+|name|TEXT|No|Project 名|
+|created_at|DATETIME|No|作成日時|
+|updated_at|DATETIME|No|更新日時|
 
 ## Foreign Keys
 
-| カラム      | 参照先       |
-| -------- | --------- |
-| hotel_id | hotels.id |
+|カラム|参照先|
+|---|---|
+|hotel_id|hotels.id|
 
 ## Constraints
 
-* hotel_id は必須とする。
-* code は一意とする。
+- hotel_id は必須とする。
 
 ---
 
 # 6.4 room_types
 
-RoomTypeを管理する。
+RoomType を管理する。
 
 ## Purpose
 
-Roomの種別を管理する。
+Room の種別を管理する。
 
 ## Columns
 
-| カラム         | 型        | NULL | 説明          |
-| ----------- | -------- | ---- | ----------- |
-| id          | INTEGER  | No   | 主キー         |
-| hotel_id    | INTEGER  | No   | Hotel       |
-| name        | TEXT     | No   | RoomType名   |
-| code        | TEXT     | No   | RoomTypeコード |
-| description | TEXT     | Yes  | 説明          |
-| created_at  | DATETIME | No   | 作成日時        |
-| updated_at  | DATETIME | No   | 更新日時        |
+|カラム|型|NULL|説明|
+|---|---|---|---|
+|id|INTEGER|No|主キー|
+|hotel_id|INTEGER|No|Hotel|
+|name|TEXT|No|RoomType 名|
+|created_at|DATETIME|No|作成日時|
+|updated_at|DATETIME|No|更新日時|
 
 ## Foreign Keys
 
-| カラム      | 参照先       |
-| -------- | --------- |
-| hotel_id | hotels.id |
+|カラム|参照先|
+|---|---|
+|hotel_id|hotels.id|
 
 ## Constraints
 
-* 同一Hotel内でcodeは一意とする。
+- hotel_id は必須とする。
 
 ---
 
 # 6.5 rooms
 
-Roomを管理する。
+Room を管理する。
 
 ## Purpose
 
-Project内で管理する部屋情報を保持する。
+Hotel 内で管理する部屋情報を保持する。
 
 ## Columns
 
-| カラム          | 型        | NULL | 説明       |
-| ------------ | -------- | ---- | -------- |
-| id           | INTEGER  | No   | 主キー      |
-| project_id   | INTEGER  | No   | Project  |
-| room_type_id | INTEGER  | No   | RoomType |
-| room_number  | TEXT     | No   | 部屋番号     |
-| display_name | TEXT     | Yes  | 表示名      |
-| floor        | TEXT     | Yes  | フロア      |
-| created_at   | DATETIME | No   | 作成日時     |
-| updated_at   | DATETIME | No   | 更新日時     |
+|カラム|型|NULL|説明|
+|---|---|---|---|
+|id|INTEGER|No|主キー|
+|hotel_id|INTEGER|No|Hotel|
+|room_type_id|INTEGER|No|RoomType|
+|room_number|TEXT|No|部屋番号|
+|display_name|TEXT|Yes|表示名|
+|created_at|DATETIME|No|作成日時|
+|updated_at|DATETIME|No|更新日時|
 
 ## Foreign Keys
 
-| カラム          | 参照先           |
-| ------------ | ------------- |
-| project_id   | projects.id   |
-| room_type_id | room_types.id |
+|カラム|参照先|
+|---|---|
+|hotel_id|hotels.id|
+|room_type_id|room_types.id|
 
 ## Constraints
 
-* room_number は必須とする。
-* room_type_id は必須とする。
+- hotel_id は必須とする。
+- room_number は必須とする。
+- room_type_id は必須とする。
 
-同一Project内では room_number を一意とする。
+同一 Hotel 内では room_number を一意とする。
 
 ---
 
 # 6.6 Master Data Relationships
 
-Master Data間のリレーションを以下に示す。
+Master Data 間のリレーションを以下に示す。
 
 ```text
 Hotel
- │
  ├── Project
- │
- └── RoomType
-        │
-        ▼
-      Room
+ ├── RoomType
+ └── Room
+
+RoomType
+ └── Room
 ```
 
 ---
 
 ## 6.7 Relationship Summary
 
-| 親テーブル      | 子テーブル      | 関係    |
-| ---------- | ---------- | ----- |
-| hotels     | projects   | 1 : N |
-| hotels     | room_types | 1 : N |
-| projects   | rooms      | 1 : N |
-| room_types | rooms      | 1 : N |
+|親テーブル|子テーブル|関係|
+|---|---|---|
+|hotels|projects|1 : N|
+|hotels|room_types|1 : N|
+|hotels|rooms|1 : N|
+|room_types|rooms|1 : N|
 
 ---
 
 ## 6.8 Management Policy
 
-初期版では以下のMaster DataをCLIまたはCSVで管理する。
+初期版では以下の Master Data を CLI または CSV で管理する。
 
-* User
-* Hotel
-* Project
-* RoomType
-* Room
+- User
+- Hotel
+- Project
+- RoomType
+- Room
 
-Web画面による管理機能は提供しない。
+Web 画面による管理機能は提供しない。
 
 ---
 
 # 7. Business Data Tables
 
-本章では、コミッショニング業務で利用するBusiness Dataテーブルを定義する。
+本章では、コミッショニング業務で利用する Business Data テーブルを定義する。
 
-Issueを集約ルート（Aggregate Root）とし、CommentおよびAttachmentはIssueに従属する。
+Issue を集約ルート(Aggregate Root)とし、Comment および Attachment は Issue に従属する。
 
 ---
 
 # 7.1 issues
 
-Issueを管理する。
+Issue を管理する。
 
 ## Purpose
 
@@ -452,152 +454,157 @@ Issueを管理する。
 
 ## Columns
 
-| カラム         | 型        | NULL | 説明         |
-| ----------- | -------- | ---- | ---------- |
-| id          | INTEGER  | No   | 主キー        |
-| project_id  | INTEGER  | No   | Project    |
-| room_id     | INTEGER  | No   | Room       |
-| target_type | TEXT     | No   | TargetType |
-| target      | TEXT     | No   | 対象機器・対象箇所  |
-| category    | TEXT     | No   | Category   |
-| description | TEXT     | No   | 詳細説明       |
-| status      | TEXT     | No   | Issue状態    |
-| created_by  | INTEGER  | No   | 登録者        |
-| created_at  | DATETIME | No   | 作成日時       |
-| updated_at  | DATETIME | No   | 更新日時       |
+|カラム|型|NULL|説明|
+|---|---|---|---|
+|id|INTEGER|No|主キー|
+|project_id|INTEGER|No|Project|
+|room_id|INTEGER|Yes|Room|
+|target_type|TEXT|No|Target Type|
+|target|TEXT|Yes|対象名|
+|category|TEXT|No|Category|
+|description|TEXT|No|詳細説明|
+|status|TEXT|No|Issue 状態|
+|created_by|INTEGER|No|登録者|
+|created_at|DATETIME|No|作成日時|
+|updated_at|DATETIME|No|更新日時|
 
 ## Foreign Keys
 
-| カラム        | 参照先         |
-| ---------- | ----------- |
-| project_id | projects.id |
-| room_id    | rooms.id    |
-| created_by | users.id    |
+|カラム|参照先|
+|---|---|
+|project_id|projects.id|
+|room_id|rooms.id|
+|created_by|users.id|
 
 ## Constraints
 
-* project_idは必須とする。
-* room_idは必須とする。
-* descriptionは必須とする。
-* target_typeは定義済みTargetTypeのみ許可する。
-* categoryは定義済みCategoryのみ許可する。
-* statusは定義済みStatusのみ許可する。
+- project_id は必須とする。
+- room_id は任意とする。
+- description は必須とする。
+- target_type は定義済み Target Type のみ許可する。
+- category は定義済み Category のみ許可する。
+- status は定義済み Status のみ許可する。
+- target_type が ROOM の場合、room_id を指定し、target は null とする。
+- target_type が OTHER の場合、room_id は null とし、target に対象名を保存する。
 
 ---
 
 # 7.2 comments
 
-Commentを管理する。
+Comment を管理する。
 
 ## Purpose
 
-Issueに対するコメント履歴を保持する。
+Issue に対するコメント履歴を保持する。
 
 ## Columns
 
-| カラム        | 型        | NULL | 説明    |
-| ---------- | -------- | ---- | ----- |
-| id         | INTEGER  | No   | 主キー   |
-| issue_id   | INTEGER  | No   | Issue |
-| comment    | TEXT     | No   | コメント  |
-| created_by | INTEGER  | No   | 登録者   |
-| created_at | DATETIME | No   | 作成日時  |
+|カラム|型|NULL|説明|
+|---|---|---|---|
+|id|INTEGER|No|主キー|
+|issue_id|INTEGER|No|Issue|
+|comment|TEXT|No|コメント|
+|created_by|INTEGER|No|登録者|
+|created_at|DATETIME|No|作成日時|
 
 ## Foreign Keys
 
-| カラム        | 参照先       |
-| ---------- | --------- |
-| issue_id   | issues.id |
-| created_by | users.id  |
+|カラム|参照先|
+|---|---|
+|issue_id|issues.id|
+|created_by|users.id|
 
 ## Constraints
 
-* issue_idは必須とする。
-* commentは必須とする。
+- issue_id は必須とする。
+- comment は必須とする。
 
-Commentは履歴データであるため、更新日時（updated_at）は保持しない。
+Comment は履歴データであるため、更新日時(updated_at)は保持しない。
 
 ---
 
 # 7.3 attachments
 
-Attachmentを管理する。
+Attachment を管理する。
 
 ## Purpose
 
-Issueへ添付した写真・動画を管理する。
+Issue へ添付した写真・動画を管理する。
 
 ## Columns
 
-| カラム                | 型        | NULL | 説明            |
-| ------------------ | -------- | ---- | ------------- |
-| id                 | INTEGER  | No   | 主キー           |
-| issue_id           | INTEGER  | No   | Issue         |
-| file_name          | TEXT     | No   | 保存ファイル名       |
-| original_file_name | TEXT     | No   | 元ファイル名        |
-| file_path          | TEXT     | No   | 相対保存パス        |
-| mime_type          | TEXT     | No   | MIME Type     |
-| file_size          | INTEGER  | No   | ファイルサイズ（Byte） |
-| uploaded_by        | INTEGER  | No   | 登録者           |
-| uploaded_at        | DATETIME | No   | アップロード日時      |
+|カラム|型|NULL|説明|
+|---|---|---|---|
+|id|INTEGER|No|主キー|
+|issue_id|INTEGER|No|Issue|
+|file_name|TEXT|No|保存ファイル名|
+|original_file_name|TEXT|No|元ファイル名|
+|file_path|TEXT|No|相対保存パス|
+|mime_type|TEXT|No|MIME Type|
+|file_size|INTEGER|No|ファイルサイズ(Byte)|
+|uploaded_by|INTEGER|No|登録者|
+|uploaded_at|DATETIME|No|アップロード日時|
 
 ## Foreign Keys
 
-| カラム         | 参照先       |
-| ----------- | --------- |
-| issue_id    | issues.id |
-| uploaded_by | users.id  |
+|カラム|参照先|
+|---|---|
+|issue_id|issues.id|
+|uploaded_by|users.id|
 
 ## Constraints
 
-* issue_idは必須とする。
-* file_nameは必須とする。
-* file_pathは必須とする。
-* file_sizeは0より大きい値とする。
+- issue_id は必須とする。
+- file_name は必須とする。
+- file_path は必須とする。
+- file_size は0 より大きい値とする。
 
-添付ファイル本体はLocal Storageに保存し、本テーブルではメタデータのみ管理する。
+添付ファイル本体は Local Storage に保存し、本テーブルではメタデータのみ管理する。
 
 ---
 
 # 7.4 Business Data Relationships
 
-Business Data間のリレーションを以下に示す。
+Business Data 間のリレーションを以下に示す。
 
 ```text
 Project
-    │
-    ▼
- Issue
- ├──────┐
- ▼      ▼
-Comment Attachment
+ └── Issue
+      ├── Comment
+      ├── Attachment
+      └── Room (optional reference)
+
+User
+ ├── Issue
+ ├── Comment
+ └── Attachment
 ```
 
 ---
 
 ## 7.5 Relationship Summary
 
-| 親テーブル    | 子テーブル       | 関係    |
-| -------- | ----------- | ----- |
-| projects | issues      | 1 : N |
-| rooms    | issues      | 1 : N |
-| users    | issues      | 1 : N |
-| issues   | comments    | 1 : N |
-| users    | comments    | 1 : N |
-| issues   | attachments | 1 : N |
-| users    | attachments | 1 : N |
+|親テーブル|子テーブル|関係|
+|---|---|---|
+|projects|issues|1 : N|
+|rooms|issues|任意参照|
+|users|issues|1 : N|
+|issues|comments|1 : N|
+|users|comments|1 : N|
+|issues|attachments|1 : N|
+|users|attachments|1 : N|
 
 ---
 
 ## 7.6 Aggregate Design
 
-IssueをAggregate Rootとする。
+Issue を Aggregate Root とする。
 
-CommentおよびAttachmentは単独では存在できず、必ずIssueに属する。
+Comment および Attachment は単独では存在できず、必ず Issue に属する。
 
-Issueを削除しない運用とするため、CommentおよびAttachmentも業務データとして保持される。
+Issue を削除しない運用とするため、Comment および Attachment も業務データとして保持される。
 
-Business Dataの整合性はIssueを中心として維持する。
+Business Data の整合性は Issue を中心として維持する。
 
 ---
 
@@ -611,16 +618,16 @@ Business Dataの整合性はIssueを中心として維持する。
 
 すべてのテーブルは単一の主キー `id` を持つ。
 
-| テーブル        | 主キー |
-| ----------- | --- |
-| users       | id  |
-| hotels      | id  |
-| projects    | id  |
-| room_types  | id  |
-| rooms       | id  |
-| issues      | id  |
-| comments    | id  |
-| attachments | id  |
+|テーブル|主キー|
+|---|---|
+|users|id|
+|hotels|id|
+|projects|id|
+|room_types|id|
+|rooms|id|
+|issues|id|
+|comments|id|
+|attachments|id|
 
 ---
 
@@ -628,31 +635,28 @@ Business Dataの整合性はIssueを中心として維持する。
 
 各テーブルの外部キーを以下に示す。
 
-| テーブル        | 外部キー         | 参照先           |
-| ----------- | ------------ | ------------- |
-| projects    | hotel_id     | hotels.id     |
-| room_types  | hotel_id     | hotels.id     |
-| rooms       | project_id   | projects.id   |
-| rooms       | room_type_id | room_types.id |
-| issues      | project_id   | projects.id   |
-| issues      | room_id      | rooms.id      |
-| issues      | created_by   | users.id      |
-| comments    | issue_id     | issues.id     |
-| comments    | created_by   | users.id      |
-| attachments | issue_id     | issues.id     |
-| attachments | uploaded_by  | users.id      |
+|テーブル|外部キー|参照先|
+|---|---|---|
+|projects|hotel_id|hotels.id|
+|room_types|hotel_id|hotels.id|
+|rooms|hotel_id|hotels.id|
+|rooms|room_type_id|room_types.id|
+|issues|project_id|projects.id|
+|issues|room_id|rooms.id|
+|issues|created_by|users.id|
+|comments|issue_id|issues.id|
+|comments|created_by|users.id|
+|attachments|issue_id|issues.id|
+|attachments|uploaded_by|users.id|
 
 ---
 
 ## 8.3 Unique Constraints
 
-| テーブル       | 制約                        |
-| ---------- | ------------------------- |
-| users      | username                  |
-| hotels     | code                      |
-| projects   | code                      |
-| room_types | (hotel_id, code)          |
-| rooms      | (project_id, room_number) |
+|テーブル|制約|
+|---|---|
+|users|username|
+|rooms|(hotel_id, room_number)|
 
 ---
 
@@ -660,16 +664,16 @@ Business Dataの整合性はIssueを中心として維持する。
 
 初期版では、業務データの削除は最小限とする。
 
-| テーブル        | 削除方針           |
-| ----------- | -------------- |
-| users       | CLIまたはCSVによる管理 |
-| hotels      | CLIまたはCSVによる管理 |
-| projects    | CLIまたはCSVによる管理 |
-| room_types  | CLIまたはCSVによる管理 |
-| rooms       | CLIまたはCSVによる管理 |
-| issues      | 削除しない          |
-| comments    | 削除しない          |
-| attachments | 削除可能           |
+|テーブル|削除方針|
+|---|---|
+|users|CLI または CSV による管理|
+|hotels|CLI または CSV による管理|
+|projects|CLI または CSV による管理|
+|room_types|CLI または CSV による管理|
+|rooms|CLI または CSV による管理|
+|issues|削除しない|
+|comments|削除しない|
+|attachments|削除可能|
 
 ---
 
@@ -677,41 +681,42 @@ Business Dataの整合性はIssueを中心として維持する。
 
 検索性能向上のため、以下のインデックスを作成する。
 
-| テーブル        | カラム        | 用途                 |
-| ----------- | ---------- | ------------------ |
-| projects    | hotel_id   | Hotel検索            |
-| room_types  | hotel_id   | RoomType検索         |
-| rooms       | project_id | Project内Room検索     |
-| issues      | project_id | Project内Issue検索    |
-| issues      | room_id    | Room別Issue検索       |
-| issues      | status     | Status検索           |
-| issues      | category   | Category検索         |
-| comments    | issue_id   | Issue別Comment検索    |
-| attachments | issue_id   | Issue別Attachment検索 |
+|テーブル|カラム|用途|
+|---|---|---|
+|projects|hotel_id|Hotel 検索|
+|room_types|hotel_id|RoomType 検索|
+|rooms|hotel_id|Hotel 内 Room 検索|
+|issues|project_id|Project 内 Issue 検索|
+|issues|room_id|Room 別 Issue 検索|
+|issues|status|Status 検索|
+|issues|category|Category 検索|
+|issues|target_type|Target Type 検索|
+|comments|issue_id|Issue 別 Comment 検索|
+|attachments|issue_id|Issue 別 Attachment 検索|
 
 ---
 
 # 10. Repository Policy
 
-Repositoryはデータアクセスのみを担当する。
+Repository はデータアクセスのみを担当する。
 
 ## Responsibilities
 
-Repositoryは以下を担当する。
+Repository は以下を担当する。
 
-* データ取得
-* データ登録
-* データ更新
-* データ削除
-* 検索
+- データ取得
+- データ登録
+- データ更新
+- データ削除
+- 検索
 
-Repositoryでは業務ロジックを実装しない。
+Repository では業務ロジックを実装しない。
 
 ---
 
 ## Repository Structure
 
-各AggregateごとにRepositoryを定義する。
+各Aggregateごとに Repository を定義する。
 
 ```text id="m31w9v"
 UserRepository
@@ -723,30 +728,30 @@ RoomRepository
 IssueRepository
 ```
 
-CommentおよびAttachmentはIssue Aggregateに属するため、必要に応じて専用Repositoryを設ける。
+Comment および Attachment は Issue Aggregateに属するため、必要に応じて専用 Repository を設ける。
 
 ---
 
 # 11. Service Validation Policy
 
-業務ルールはService Layerで検証する。
+業務ルールは Service Layer で検証する。
 
 ## Validation Examples
 
-Service Layerでは以下を検証する。
+Service Layer では以下を検証する。
 
-* 必須項目
-* TargetType
-* Category
-* Status
-* Room存在確認
-* Project存在確認
-* User存在確認
-* Attachmentのサイズ
-* Attachmentの拡張子
-* 業務ルール
+- 必須項目
+- Target Type
+- Category
+- Status
+- Room 存在確認
+- Project 存在確認
+- User 存在確認
+- Attachment のサイズ
+- Attachment の拡張子
+- 業務ルール
 
-DB制約では表現できないルールはService Layerで実装する。
+DB 制約では表現できないルールは Service Layer で実装する。
 
 ---
 
@@ -754,14 +759,14 @@ DB制約では表現できないルールはService Layerで実装する。
 
 将来的な拡張を以下に示す。
 
-* PostgreSQLへの移行
-* Full Text Search対応
-* 添付ファイル保存先の変更（NAS・クラウドストレージ）
-* Audit Logテーブル追加
-* Notificationテーブル追加
-* AI実行履歴テーブル追加
-* Soft Delete対応
-* 履歴管理テーブル追加
+- PostgreSQL への移行
+- Full Text Search 対応
+- 添付ファイル保存先の変更(NAS ・クラウドストレージ)
+- Audit Log テーブル追加
+- Notification テーブル追加
+- AI実行履歴テーブル追加
+- Soft Delete 対応
+- 履歴管理テーブル追加
 
 これらは初期版の設計範囲には含めない。
 
