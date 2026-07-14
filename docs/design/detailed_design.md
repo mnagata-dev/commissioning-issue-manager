@@ -398,7 +398,6 @@ target_type: str
 target: str | None
 category: str
 description: str
-raw_input_text: str | None
 ```
 
 ---
@@ -447,6 +446,7 @@ category: str
 description: str
 status: str
 created_by: dict
+updated_by: dict
 created_at: datetime
 updated_at: datetime
 
