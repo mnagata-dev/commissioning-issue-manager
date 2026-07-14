@@ -1,9 +1,9 @@
 # CIM UI Design
 
-**Document Version:** 1.1
-**Status:** Draft
-**Last Updated:** 2026-07-03
-**Author:** Masato Nagata
+- **Document Version:** 1.2
+- **Status:** Draft
+- **Last Updated:** 2026-07-08
+- **Author:** Masato Nagata
 
 ---
 
@@ -13,6 +13,7 @@
 |---|---|---|
 |1.0|2026-06-30|Initial version|
 |1.1|2026-07-03|Reflect updated login specification and master data terminology.|
+|1.2|2026-07-09|Align UI design with Requirements v1.2. Simplify Target Type to ROOM and OTHER, clarify AI Draft workflow, add validation rules, and improve Issue Detail and Issue Edit screens.|
 
 ---
 
@@ -39,7 +40,7 @@
 
 # 1. Purpose
 
-本書は、CIM(Commissioning Issue Manager)のUI設計を定義することを目的とする。
+本書は、CIM (Commissioning Issue Manager) の UI 設計を定義することを目的とする。
 
 本書では、画面一覧、画面遷移、各画面の表示項目、入力項目、および操作仕様を定義する。
 
@@ -51,7 +52,7 @@
 
 - 画面一覧
 - 画面遷移
-- 共通UI方針
+- 共通 UI 方針
 - 各画面の表示項目
 - 各画面の入力項目
 - 各画面の操作仕様
@@ -59,10 +60,10 @@
 
 以下は対象外とする。
 
-- API詳細仕様
-- DB設計
-- CSS詳細
-- JavaScript実装詳細
+- API 詳細仕様
+- DB 設計
+- CSS 詳細
+- JavaScript 実装詳細
 - テストケース
 
 これらは各設計書で定義する。
@@ -77,7 +78,7 @@
 |---|---|
 |requirements.md|要件定義書|
 |basic_design.md|基本設計書|
-|api_design.md|API設計書|
+|api_design.md|API 設計書|
 |project_conventions.md|プロジェクト共通ルール|
 
 ---
@@ -88,21 +89,21 @@
 
 本システムはコミッショニング現場で利用されるため、スマートフォン利用を重視する。
 
-PCブラウザでも利用可能とする。
+PC ブラウザでも利用可能とする。
 
 ---
 
 ## 4.2 Simple UI
 
-初期版では、複雑なUIコンポーネントを避け、シンプルで分かりやすい画面構成とする。
+初期版では、複雑な UI コンポーネントを避け、シンプルで分かりやすい画面構成とする。
 
 ---
 
 ## 4.3 Issue First
 
-本システムの中心はIssue管理である。
+本システムの中心は Issue 管理である。
 
-画面設計では、Issueの登録・確認・更新を最優先とする。
+画面設計では、Issue の登録・確認・更新を最優先とする。
 
 ---
 
@@ -110,7 +111,7 @@ PCブラウザでも利用可能とする。
 
 AI Draftは補助機能である。
 
-AIが生成した内容は、必ず利用者が確認・修正してから保存する。
+AIが生成した内容は、必ずユーザーが確認・修正してから保存する。
 
 ---
 
@@ -121,11 +122,11 @@ AIが生成した内容は、必ず利用者が確認・修正してから保存
 |画面|説明|
 |---|---|
 |Login|ログイン画面|
-|Project Selection|Project選択画面|
-|Issue List|Issue一覧画面|
-|Issue Detail|Issue詳細画面|
-|Issue Create|Issue登録画面|
-|Issue Edit|Issue編集画面|
+|Project Selection|Project 選択画面|
+|Issue List|Issue 一覧画面|
+|Issue Detail|Issue 詳細画面|
+|Issue Create|Issue 登録画面|
+|Issue Edit|Issue 編集画面|
 |Administration|管理メニュー画面|
 
 ---
@@ -162,18 +163,18 @@ Administration
 
 # 7. Common UI Components
 
-本システムで共通利用するUIコンポーネントを以下に示す。
+本システムで共通利用する UI コンポーネントを以下に示す。
 
 |コンポーネント|用途|
 |---|---|
-|Header|画面タイトル、ログアウト、現在のProject表示|
+|Header|画面タイトル、ログアウト、現在の Project 表示|
 |Navigation|主要画面への遷移|
 |Button|保存、戻る、削除、追加などの操作|
 |Form|入力フォーム|
 |Modal|確認ダイアログ|
 |Alert|エラー・警告・成功メッセージ|
-|Loading|API通信中表示|
-|Badge|StatusやCategory表示|
+|Loading|API 通信中表示|
+|Badge|Status や Category 表示|
 
 ---
 
@@ -182,9 +183,9 @@ Administration
 Headerには以下を表示する。
 
 - システム名
-- 現在のProject
+- 現在の Project
 - ログインユーザー
-- Logoutボタン
+- Logout ボタン
 
 ---
 
@@ -207,15 +208,15 @@ Headerには以下を表示する。
 
 エラーや成功メッセージは画面上部または該当フォーム付近に表示する。
 
-利用者が理解しやすい文言を使用する。
+ユーザーが理解しやすい文言を使用する。
 
 ---
 
 ## 7.4 Loading
 
-API通信中またはAI Draft生成中はLoading表示を行う。
+API 通信中または AI Draft 生成中は Loading 表示を行う。
 
-AI Draft生成中は、利用者が処理中であることを認識できる表示とする。
+AI Draft 生成中は、ユーザーが処理中であることを認識できる表示とする。
 
 ---
 
@@ -223,9 +224,9 @@ AI Draft生成中は、利用者が処理中であることを認識できる表
 
 ## 8.1 Purpose
 
-利用者認証を行う。
+ユーザー認証を行う。
 
-認証成功後、Project Selection画面へ遷移する。
+認証成功後、Project Selection 画面へ遷移する。
 
 ---
 
@@ -275,7 +276,7 @@ Error Message
 
 ## 9.1 Purpose
 
-作業対象となるProjectを選択する。
+作業対象となる Project を選択する。
 
 ---
 
@@ -283,7 +284,7 @@ Error Message
 
 ```text
 +--------------------------------------------------+
-|Project Selection|
+| Project Selection                                |
 +--------------------------------------------------+
 
 Current User
@@ -309,9 +310,9 @@ Project List
 
 |項目|説明|
 |---|---|
-|Current User|ログイン中の利用者|
-|Project List|選択可能なProject一覧|
-|Select Project Button|Project決定|
+|Current User|ログイン中のユーザー|
+|Project List|選択可能な Project 一覧|
+|Select Project Button|Project 決定|
 
 ---
 
@@ -319,8 +320,8 @@ Project List
 
 |操作|内容|
 |---|---|
-|Select Project|Projectを選択する。|
-|Confirm|Issue List画面へ遷移する。|
+|Select Project|Project を選択する。|
+|Confirm|Issue List 画面へ遷移する。|
 
 ---
 
@@ -328,9 +329,9 @@ Project List
 
 ## 10.1 Purpose
 
-選択中ProjectのIssue一覧を表示する。
+選択中 Project の Issue 一覧を表示する。
 
-Issue検索およびIssue登録の起点となる画面である。
+Issue 検索および Issue 登録の起点となる画面である。
 
 ---
 
@@ -338,7 +339,7 @@ Issue検索およびIssue登録の起点となる画面である。
 
 ```text
 +--------------------------------------------------+
-|Project : Hotel A Commissioning|
+| Project : Hotel A Commissioning                  |
 +--------------------------------------------------+
 
 Search
@@ -378,6 +379,16 @@ Curtain does not close.
 
 --------------------------------------------------
 
+OPEN
+
+Target : Network
+
+Processor cannot communicate with gateway.
+
+2026-06-30
+
+--------------------------------------------------
+
 [ + New Issue ]
 ```
 
@@ -387,11 +398,11 @@ Curtain does not close.
 
 |項目|説明|
 |---|---|
-|Current Project|選択中Project|
+|Current Project|選択中 Project|
 |Search Conditions|検索条件|
-|Issue List|Issue一覧|
-|Status Badge|Status表示|
-|New Issue Button|Issue登録画面へ遷移|
+|Issue List|Issue 一覧|
+|Status Badge|Status 表示|
+|New Issue Button|Issue 登録画面へ遷移|
 
 ---
 
@@ -402,7 +413,7 @@ Curtain does not close.
 |Keyword|No|キーワード検索|
 |Status|No|Status|
 |Category|No|Category|
-|TargetType|No|TargetType|
+|Target Type|No|Target Type|
 
 ---
 
@@ -413,10 +424,10 @@ Curtain does not close.
 |項目|説明|
 |---|---|
 |Status|現在の状態|
-|Room|Room|
-|Target|対象|
+|Room|Target Type が ROOM の場合に表示する|
+|Target|Target Type が OTHER の場合に表示する対象名|
 |Category|Category|
-|Description|Issue内容の先頭部分|
+|Description|Issue 内容の先頭部分|
 |Updated At|最終更新日時|
 
 ---
@@ -426,9 +437,9 @@ Curtain does not close.
 |操作|内容|
 |---|---|
 |Search|条件検索を行う。|
-|Open Issue|Issue Detail画面へ遷移する。|
-|New Issue|Issue Create画面へ遷移する。|
-|Change Project|Project Selection画面へ戻る。|
+|Open Issue|Issue Detail 画面へ遷移する。|
+|New Issue|Issue Create 画面へ遷移する。|
+|Change Project|Project Selection 画面へ戻る。|
 
 ---
 
@@ -436,13 +447,15 @@ Curtain does not close.
 
 ## 11.1 Purpose
 
-登録済みIssueの詳細情報を表示する。
+登録済み Issue の詳細情報を表示する。
 
-CommentおよびAttachmentも合わせて表示し、Issueの状況を確認できる。
+Comment および Attachment も合わせて表示し、Issue の状況を確認できる。
 
 ---
 
 ## 11.2 Screen Layout
+
+Target Type = ROOM
 
 ```text
 +--------------------------------------------------+
@@ -454,8 +467,6 @@ Status : OPEN
 Room : 1203
 
 Target Type : ROOM
-
-Target : Bathroom
 
 Category : LIGHTING
 
@@ -491,16 +502,63 @@ video_001.mp4
 [ Back ]
 ```
 
+Target Type = OTHER
+
+```text
++--------------------------------------------------+
+| Issue Detail                                     |
++--------------------------------------------------+
+
+Status : OPEN
+
+Target Type : OTHER
+
+Target : Network
+
+Category : NETWORK
+
+Description
+
+Processor cannot communicate with gateway.
+
+--------------------------------------------------
+
+Comments
+
+----------------------------------------
+Engineer 1
+
+Checked on site.
+
+2026-06-30 10:20
+----------------------------------------
+
+--------------------------------------------------
+
+Attachments
+
+photo_001.jpg
+
+video_001.mp4
+
+--------------------------------------------------
+
+[ Edit ]
+[ Add Comment ]
+[ Upload Attachment ]
+[ Back ]
+```
+
 ---
 
 ## 11.3 Display Items
 
 |項目|説明|
 |---|---|
-|Status|Issueの状態|
-|Room|Room|
-|Target Type|TargetType|
-|Target|対象機器・対象箇所|
+|Status|Issue の状態|
+|Room|Target Type が ROOM の場合に表示する|
+|Target Type|Target Type|
+|Target|Target Type が OTHER の場合に表示する対象名|
 |Category|Category|
 |Description|詳細説明|
 |Comment List|コメント履歴|
@@ -512,9 +570,9 @@ video_001.mp4
 
 |操作|内容|
 |---|---|
-|Edit|Issue Edit画面へ遷移する。|
-|Add Comment|Commentを追加する。|
-|Upload Attachment|Attachmentを追加する。|
+|Edit|Issue Edit 画面へ遷移する。|
+|Add Comment|Comment を追加する。|
+|Upload Attachment|Attachment を追加する。|
 |Open Attachment|添付ファイルを表示する。|
 |Back|Issue Listへ戻る。|
 
@@ -524,9 +582,9 @@ video_001.mp4
 
 ## 12.1 Purpose
 
-新しいIssueを登録する。
+新しい Issue を登録する。
 
-AI Draftを利用した入力支援を提供する。
+AI Draft を利用した入力支援を提供する。
 
 ---
 
@@ -537,14 +595,16 @@ AI Draftを利用した入力支援を提供する。
 | New Issue                                        |
 +--------------------------------------------------+
 
-Room
-[ ▼ ]
-
 Target Type
 [ ▼ ]
 
+Room
+[ ▼ ]
+(Target Type = ROOM の場合)
+
 Target
 +--------------------------------------+
+(Target Type = OTHER の場合)
 
 Category
 [ ▼ ]
@@ -578,12 +638,12 @@ Input
 
 |項目|説明|
 |---|---|
-|Room|Room選択|
-|Target Type|TargetType選択|
-|Target|対象|
-|Category|Category選択|
+|Target Type|Target Type 選択|
+|Room|Target Type が ROOM の場合に表示|
+|Target|Target Type が OTHER の場合に表示|
+|Category|Category 選択|
 |Description|詳細説明|
-|AI Draft|AI入力支援|
+|AI Draft|AI 入力支援|
 
 ---
 
@@ -591,20 +651,40 @@ Input
 
 |操作|内容|
 |---|---|
-|Generate AI Draft|AI Draftを生成する。|
-|Save|Issueを登録する。|
+|Generate AI Draft|AI Draft を生成する。|
+|Save|Issue を登録する。|
 |Cancel|登録を中止する。|
 
 ---
 
 ## 12.5 AI Draft Flow
 
-1. 利用者が音声またはテキストを入力する。
-2. 「Generate AI Draft」を押下する。
-3. AIが入力内容を解析する。
-4. Target Type、Target、Category、Title、Descriptionを生成する。
-5. 利用者が内容を確認・修正する。
-6. 「Save」でIssueを登録する。
+1. ユーザーが Target Type を選択する。
+2. Target Type が ROOM の場合は Room を選択する。
+3. Target Type が OTHER の場合は Target を入力する。
+4. ユーザーが音声またはテキストを入力する。
+5. 「 Generate AI Draft 」を押下する。
+6. AI が入力内容を解析し、Category および Description を生成する。
+7. ユーザーが生成結果を確認・修正する。
+8. 「 Save 」を押下して Issue を登録する。
+
+## 12.6 Validation
+
+以下の項目を必須とする。
+
+- Target Type
+- Category
+- Description
+
+Target Type が ROOM の場合
+
+- Room を必須とする。
+
+Target Type が OTHER の場合
+
+- Target を必須とする。
+
+入力内容がバリデーションルールを満たさない場合は、保存を行わず、該当項目にエラーメッセージを表示する。
 
 ---
 
@@ -612,7 +692,7 @@ Input
 
 ## 13.1 Purpose
 
-登録済みIssueを更新する。
+登録済み Issue を更新する。
 
 ---
 
@@ -626,14 +706,16 @@ Input
 Status
 [ OPEN ▼ ]
 
-Room
-[ ▼ ]
-
 Target Type
 [ ▼ ]
 
+Room
+[ ▼ ]
+(Target Type = ROOM の場合)
+
 Target
 +--------------------------------------+
+(Target Type = OTHER の場合)
 
 Category
 [ ▼ ]
@@ -655,9 +737,18 @@ Description
 
 ## 13.3 Display Items
 
-Issue Create画面と同様の入力項目を表示する。
+Issue Create 画面と同様の入力項目を表示する。
 
-加えて、Statusを変更できる。
+編集画面では、既存の Issue の内容を初期値として表示し、利用者は必要な項目を変更できる。
+
+|項目|説明|
+|---|---|
+|Status|Issue の現在の状態を表示・編集する。|
+|Target Type|Target Type を選択する。|
+|Room|Target Type が ROOM の場合に表示する。|
+|Target|Target Type が OTHER の場合に表示する。|
+|Category|Category を選択する。|
+|Description|Issue の詳細説明を入力・編集する。|
 
 ---
 
@@ -665,9 +756,9 @@ Issue Create画面と同様の入力項目を表示する。
 
 |操作|内容|
 |---|---|
-|Save|Issueを更新する。|
+|Save|Issue を更新する。|
 |Cancel|編集を中止する。|
-|Change Status|Statusを変更する。|
+|Change Status|Status を変更する。|
 
 ---
 
@@ -675,13 +766,19 @@ Issue Create画面と同様の入力項目を表示する。
 
 以下の項目を必須とする。
 
-- Room
 - Target Type
-- Target
 - Category
 - Description
 
-入力内容に不備がある場合は、保存を行わずエラーメッセージを表示する。
+Target Type が ROOM の場合
+
+- Room を必須とする。
+
+Target Type が OTHER の場合
+
+- Target を必須とする。
+
+入力内容がバリデーションルールを満たさない場合は、保存を行わず、該当項目にエラーメッセージを表示する。
 
 ---
 
@@ -689,9 +786,9 @@ Issue Create画面と同様の入力項目を表示する。
 
 ## 14.1 Purpose
 
-Administrator向けの管理機能を提供する。
+Administrator 向けの管理機能を提供する。
 
-初期版では、Project管理、User管理およびMaster Data管理はCLIまたはCSVで実施するため、本画面は管理機能の入口として提供する。
+初期版では、Project 管理、User 管理および Master Data 管理は CLI または CSV で実施するため、本画面は管理機能の入口として提供する。
 
 ---
 
@@ -733,8 +830,8 @@ Master Data Management
 
 |項目|説明|
 |---|---|
-|Project Management|Project管理機能|
-|User Management|User管理機能|
+|Project Management|Project 管理機能|
+|User Management|User 管理機能|
 |Master Data Management|Hotel、RoomType、Room などの管理|
 |Back Button|前画面へ戻る|
 
@@ -746,7 +843,7 @@ Master Data Management
 |---|---|
 |Back|前画面へ戻る。|
 
-初期版ではWeb画面からの更新機能は提供しない。
+初期版では Web 画面からの更新機能は提供しない。
 
 ---
 
@@ -754,13 +851,13 @@ Master Data Management
 
 ## 15.1 Purpose
 
-利用者がエラー内容を理解し、適切な対応を行えるようにする。
+ユーザーがエラー内容を理解し、適切な対応を行えるようにする。
 
 ---
 
 ## 15.2 Display Policy
 
-- エラーメッセージは利用者に理解しやすい表現とする。
+- エラーメッセージはユーザーに理解しやすい表現とする。
 - システム内部の詳細情報は表示しない。
 - 入力エラーは対象項目の近くに表示する。
 - システムエラーは画面上部に表示する。
@@ -772,11 +869,11 @@ Master Data Management
 例：
 
 ```text
-Roomを選択してください。
+Room を選択してください。
 
-Categoryを選択してください。
+Category を選択してください。
 
-Descriptionを入力してください。
+Description を入力してください。
 ```
 
 ---
@@ -808,7 +905,7 @@ Descriptionを入力してください。
 例：
 
 ```text
-AI Draftの生成に失敗しました。
+AI Draft の生成に失敗しました。
 
 入力内容を確認して再度実行してください。
 ```
@@ -819,12 +916,12 @@ AI Draftの生成に失敗しました。
 
 将来的に以下のUI改善を検討する。
 
-- Web画面によるProject管理
-- Web画面によるUser管理
-- Web画面によるMaster Data管理
-- Dashboard画面
-- Issue統計画面
-- AIチャット画面
+- Web 画面による Project 管理
+- Web 画面による User 管理
+- Web 画面による Master Data 管理
+- Dashboard 画面
+- Issue 統計画面
+- AI チャット画面
 - ダークモード対応
 - 多言語対応
 - タブレット向けレイアウト最適化

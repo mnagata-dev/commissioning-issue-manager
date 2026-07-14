@@ -1,9 +1,9 @@
 # CIM API Design
 
-**Document Version:** 1.1
-**Status:** Draft
-**Last Updated:** 2026-07-03
-**Author:** Masato Nagata
+- **Document Version:** 1.2
+- **Status:** Draft
+- **Last Updated:** 2026-07-08
+- **Author:** Masato Nagata
 
 ---
 
@@ -13,6 +13,7 @@
 |---|---|---|
 |1.0|2026-06-30|Initial version|
 |1.1|2026-07-03|Update authentication specification and login ID policy.|
+|1.2|2026-07-08|Align API design with Requirements v1.2. Simplify Target Type to ROOM and OTHER, clarify AI responsibilities, and update Issue APIs.|
 
 ---
 
@@ -38,9 +39,9 @@
 
 # 1. Purpose
 
-本書は、 CIM (Commissioning Issue Manager) のAPI設計を定義することを目的とする。
+本書は、CIM (Commissioning Issue Manager) の API 設計を定義することを目的とする。
 
-本書では、FrontendとBackend間で利用するREST APIのエンドポイント、リクエスト、レスポンス、およびエラー仕様を定義する。
+本書では、Frontend と Backend 間で利用する REST API のエンドポイント、リクエスト、レスポンス、およびエラー仕様を定義する。
 
 ---
 
@@ -58,10 +59,10 @@
 
 以下は対象外とする。
 
-- DBテーブル定義
-- Service実装
-- Repository実装
-- UI詳細設計
+- DB テーブル定義
+- Service 実装
+- Repository 実装
+- UI 詳細設計
 - テストケース
 
 これらは各設計書で定義する。
@@ -96,14 +97,14 @@
 |Authentication|GET|/api/auth/me|ログイン中ユーザー取得|
 |Project|GET|/api/projects|Project一覧取得|
 |Issue|GET|/api/projects/{project_id}/issues|Issue一覧取得|
-|Issue|GET|/api/issues/{issue_id}|Issue詳細取得|
-|Issue|POST|/api/projects/{project_id}/issues|Issue登録|
+|Issue|GET|/api/issues/{issue_id}|Issue 詳細取得|
+|Issue|POST|/api/projects/{project_id}/issues|Issue 登録|
 |Issue|PUT|/api/issues/{issue_id}|Issue更新|
-|Issue|PATCH|/api/issues/{issue_id}/status|Status変更|
+|Issue|PATCH|/api/issues/{issue_id}/status|Status 変更|
 |AI|POST|/api/ai/issue-draft|AI Draft生成|
-|Comment|POST|/api/issues/{issue_id}/comments|Comment追加|
-|Attachment|POST|/api/issues/{issue_id}/attachments|Attachment追加|
-|Attachment|DELETE|/api/issues/{issue_id}/attachments/{attachment_id}|Attachment削除|
+|Comment|POST|/api/issues/{issue_id}/comments|Comment 追加|
+|Attachment|POST|/api/issues/{issue_id}/attachments|Attachment 追加|
+|Attachment|DELETE|/api/issues/{issue_id}/attachments/{attachment_id}|Attachment 削除|
 
 ---
 
@@ -111,7 +112,7 @@
 
 ## 5.1 Base URL
 
-すべてのAPIは以下のPrefixを持つ。
+すべての API は以下の Prefix を持つ。
 
 ```text
 /api
@@ -121,15 +122,15 @@
 
 ## 5.2 Format
 
-リクエストおよびレスポンスは原則としてJSON形式とする。
+リクエストおよびレスポンスは原則として JSON 形式とする。
 
-ただし、Attachment Uploadは `multipart/form-data` を利用する。
+ただし、Attachment Upload は `multipart/form-data` を利用する。
 
 ---
 
 ## 5.3 DateTime Format
 
-日時はISO 8601形式で返却する。
+日時は ISO 8601形式で返却する。
 
 ```text
 2026-06-30T10:30:00
@@ -139,7 +140,7 @@
 
 ## 5.4 Authentication
 
-認証が必要なAPIでは、認証済み User のみアクセスできる。
+認証が必要な API では、認証済み User のみアクセスできる。
 
 未認証の場合は `401 Unauthorized` を返す。
 
@@ -153,7 +154,7 @@
 
 ## 5.6 Success Response
 
-成功時は、各APIで定義したJSONレスポンスを返す。
+成功時は、各APIで定義した JSON レスポンスを返す。
 
 ---
 
@@ -161,7 +162,7 @@
 
 エラー時は共通エラーレスポンス形式を返す。
 
-詳細は「12. Error Response」で定義する。
+詳細は「 12. Error Response 」で定義する。
 
 ---
 
@@ -177,7 +178,7 @@ POST /api/auth/login
 
 ### Description
 
-利用者がログインする。
+ユーザーがログインする。
 
 username はログイン ID とし、メールアドレス形式も利用できる。
 
@@ -222,7 +223,7 @@ POST /api/auth/logout
 
 ### Description
 
-利用者がログアウトする。
+ユーザーがログアウトする。
 
 ### Response
 
@@ -250,7 +251,7 @@ GET /api/auth/me
 
 ### Description
 
-ログイン中の利用者情報を取得する。
+ログイン中のユーザー情報を取得する。
 
 ### Response
 
@@ -283,7 +284,7 @@ GET /api/projects
 
 ### Description
 
-Engineerが選択可能なProject一覧を取得する。
+Engineer が選択可能な Project 一覧を取得する。
 
 ### Response
 
@@ -322,16 +323,16 @@ GET /api/projects/{project_id}/issues
 
 ### Description
 
-指定Projectに属するIssue一覧を取得する。
+指定 Project に属する Issue 一覧を取得する。
 
 ### Query Parameters
 
 |Parameter|Required|説明|
 |---|---|---|
-|status|No|Statusで絞り込み|
-|category|No|Categoryで絞り込み|
-|target_type|No|TargetTypeで絞り込み|
-|keyword|No|Description検索|
+|status|No|Status で絞り込み|
+|category|No|Category で絞り込み|
+|target_type|No|Target Type で絞り込み|
+|keyword|No|Description 検索|
 |page|No|ページ番号|
 |page_size|No|1ページあたりの件数|
 
@@ -342,8 +343,12 @@ GET /api/projects/{project_id}/issues
   "items": [
     {
       "id": 101,
+      "room": {
+        "id": 1,
+        "room_number": "1203"
+      },
       "target_type": "ROOM",
-      "target": "1203",
+      "target": null,
       "category": "LIGHTING",
       "description": "Bathroom light does not turn off.",
       "status": "OPEN",
@@ -375,9 +380,9 @@ GET /api/issues/{issue_id}
 
 ### Description
 
-Issue詳細を取得する。
+Issue 詳細を取得する。
 
-CommentおよびAttachment一覧も含めて返却する。
+Comment および Attachment 一覧も含めて返却する。
 
 ### Response
 
@@ -388,8 +393,12 @@ CommentおよびAttachment一覧も含めて返却する。
     "id": 1,
     "name": "Hotel A Commissioning"
   },
+  "room": {
+    "id": 1,
+    "room_number": "1203"
+  },
   "target_type": "ROOM",
-  "target": "1203",
+  "target": null,
   "category": "LIGHTING",
   "description": "Bathroom light does not turn off.",
   "status": "OPEN",
@@ -441,22 +450,36 @@ POST /api/projects/{project_id}/issues
 
 ### Description
 
-指定ProjectにIssueを登録する。
+指定 Project に Issue を登録する。
 
 ### Request
 
-room_id は任意項目とする。
+Target Type が ROOM の場合は、room_id を指定する。
 
-Room に紐づかない Issue の場合は null を指定する。
+Target Type が OTHER の場合は、room_id を null とし、target に対象名を指定する。
+
+ROOM の例
+
+```json
+{
+  "room_id": 1,
+  "target_type": "ROOM",
+  "category": "LIGHTING",
+  "description": "Bathroom light does not turn off.",
+  "raw_input_text": "Bathroom light does not turn off."
+}
+```
+
+OTHER の例
 
 ```json
 {
   "room_id": null,
-  "target_type": "ROOM",
-  "target": "1203",
-  "category": "LIGHTING",
-  "description": "Bathroom light does not turn off.",
-  "raw_input_text": "Room 1203 bathroom light does not turn off."
+  "target_type": "OTHER",
+  "target": "Network",
+  "category": "NETWORK",
+  "description": "Processor cannot communicate with gateway.",
+  "raw_input_text": "Processor cannot communicate with gateway."
 }
 ```
 
@@ -475,7 +498,7 @@ Room に紐づかない Issue の場合は null を指定する。
 |---|---|
 |400|入力値不正|
 |401|未認証|
-|404|Projectが存在しない|
+|404|Project が存在しない|
 
 ---
 
@@ -489,21 +512,34 @@ PUT /api/issues/{issue_id}
 
 ### Description
 
-Issue内容を更新する。
+Issue 内容を更新する。
 
 ### Request
 
-room_id は任意項目とする。
+Target Type が ROOM の場合は、room_id を指定する。
 
-Room に紐づかない Issue の場合は null を指定する。
+Target Type が OTHER の場合は、room_id を null とし、target に対象名を指定する。
+
+ROOM の例
+
+```json
+{
+  "room_id": 1,
+  "target_type": "ROOM",
+  "category": "LIGHTING",
+  "description": "Bathroom light remains on after Master OFF."
+}
+```
+
+OTHER の例
 
 ```json
 {
   "room_id": null,
-  "target_type": "ROOM",
-  "target": "1203",
-  "category": "LIGHTING",
-  "description": "Bathroom light remains on after Master OFF."
+  "target_type": "OTHER",
+  "target": "Network",
+  "category": "NETWORK",
+  "description": "Processor cannot communicate with gateway."
 }
 ```
 
@@ -536,7 +572,7 @@ PATCH /api/issues/{issue_id}/status
 
 ### Description
 
-IssueのStatusを変更する。
+Issue の Status を変更する。
 
 ### Request
 
@@ -545,6 +581,15 @@ IssueのStatusを変更する。
   "status": "IN_PROGRESS"
 }
 ```
+
+### Allowed Status
+
+以下の Status を指定できる。
+
+- OPEN
+- IN_PROGRESS
+- RESOLVED
+- CLOSED
 
 ### Response
 
@@ -562,7 +607,7 @@ IssueのStatusを変更する。
 |---|---|
 |400|入力値不正|
 |401|未認証|
-|404|Issueが存在しない|
+|404|Issue が存在しない|
 
 ---
 
@@ -578,16 +623,38 @@ POST /api/ai/issue-draft
 
 ### Description
 
-音声入力またはテキスト入力を解析し、Issue Draftを生成する。
-
-AIは業務データを保存せず、生成結果のみを返却する。
+音声入力またはテキスト入力を解析し、Issue Draft を生成する。
+AI は業務データを保存せず、生成結果のみを返却する。
+AI は Category および Description のみを返却する。
+Room、Target Type および Target はレスポンスに含めない。
 
 ### Request
+
+AI は Target Type、Room および Target を決定しない。
+
+Target Type、Room および Target は、AI Draft 生成前にユーザーが指定する。
+
+ROOM の例
 
 ```json
 {
   "project_id": 1,
-  "input_text": "Room 1203 bathroom light does not turn off."
+  "target_type": "ROOM",
+  "room_id": 1,
+  "target": null,
+  "input_text": "Bathroom light does not turn off."
+}
+```
+
+OTHER の例
+
+```json
+{
+  "project_id": 1,
+  "target_type": "OTHER",
+  "room_id": null,
+  "target": "Network",
+  "input_text": "Processor cannot communicate with gateway."
 }
 ```
 
@@ -595,8 +662,6 @@ AIは業務データを保存せず、生成結果のみを返却する。
 
 ```json
 {
-  "target_type": "ROOM",
-  "target": "1203",
   "category": "LIGHTING",
   "description": "Bathroom light remains on after operation."
 }
@@ -608,7 +673,7 @@ AIは業務データを保存せず、生成結果のみを返却する。
 |---|---|
 |400|入力値不正|
 |401|未認証|
-|500|AI処理失敗|
+|500|AI 処理失敗|
 
 ---
 
@@ -624,7 +689,7 @@ POST /api/issues/{issue_id}/comments
 
 ### Description
 
-IssueへCommentを追加する。
+Issue へ Comment を追加する。
 
 ### Request
 
@@ -663,7 +728,7 @@ GET /api/issues/{issue_id}/comments
 
 ### Description
 
-Issueに登録されているComment一覧を取得する。
+Issue に登録されている Comment 一覧を取得する。
 
 ### Response
 
@@ -688,7 +753,7 @@ Issueに登録されているComment一覧を取得する。
 |Status|内容|
 |---|---|
 |401|未認証|
-|404|Issueが存在しない|
+|404|Issue が存在しない|
 
 ---
 
@@ -704,7 +769,7 @@ POST /api/issues/{issue_id}/attachments
 
 ### Description
 
-Issueへ添付ファイルを追加する。
+Issue へ添付ファイルを追加する。
 
 ### Request
 
@@ -750,7 +815,7 @@ GET /api/issues/{issue_id}/attachments
 
 ### Description
 
-Issueに添付されているAttachment一覧を取得する。
+Issue に添付されている Attachment 一覧を取得する。
 
 ### Response
 
@@ -773,7 +838,7 @@ Issueに添付されているAttachment一覧を取得する。
 |Status|内容|
 |---|---|
 |401|未認証|
-|404|Issueが存在しない|
+|404|Issue が存在しない|
 
 ---
 
@@ -798,7 +863,7 @@ GET /api/attachments/{attachment_id}
 |Status|内容|
 |---|---|
 |401|未認証|
-|404|Attachmentが存在しない|
+|404|Attachment が存在しない|
 
 ---
 
@@ -812,7 +877,7 @@ DELETE /api/issues/{issue_id}/attachments/{attachment_id}
 
 ### Description
 
-IssueからAttachmentを削除する。
+Issue から Attachment を削除する。
 
 添付ファイル本体および管理情報を削除する。
 
@@ -829,7 +894,7 @@ IssueからAttachmentを削除する。
 |Status|内容|
 |---|---|
 |401|未認証|
-|404|IssueまたはAttachmentが存在しない|
+|404|Issue または Attachment が存在しない|
 
 ---
 
@@ -841,7 +906,7 @@ IssueからAttachmentを削除する。
 
 ## 12.1 Error Response Format
 
-エラー時は以下のJSON形式で返却する。
+エラー時は以下の JSON 形式で返却する。
 
 ```json
 {
@@ -896,7 +961,7 @@ IssueからAttachmentを削除する。
 
 # 13. Authorization
 
-本章ではAPIの認可方針を定義する。
+本章では API の認可方針を定義する。
 
 ---
 
@@ -936,11 +1001,11 @@ IssueからAttachmentを削除する。
 
 ## 13.3 Administration APIs
 
-初期版では、Project管理・User管理・Master Data管理はCLIまたはCSVで実施する。
+初期版では、Project 管理・ User 管理・ Master Data 管理は CLI または CSV で実施する。
 
-そのため、Administration用Web APIは提供しない。
+そのため、Administration 用 Web API は提供しない。
 
-将来的にWeb管理画面を実装する際に、Administration APIを追加する。
+将来的に Web 管理画面を実装する際に、Administration API を追加する。
 
 ---
 
@@ -951,7 +1016,7 @@ IssueからAttachmentを削除する。
 |項目|内容|
 |---|---|
 |Protocol|HTTP|
-|Data Format|JSON(添付ファイルを除く)|
+|Data Format|JSON (添付ファイルを除く)|
 |File Upload|multipart/form-data|
 |Authentication|認証必須|
 |AI|Ollama|
@@ -973,13 +1038,13 @@ IssueからAttachmentを削除する。
 - User Management API
 - Project Management API
 - Master Data API
-- Issue Search APIの検索条件拡張
-- Issue履歴取得API
+- Issue Search API の検索条件拡張
+- Issue 履歴取得 API
 - Notification API
 - Audit Log API
-- AI設定API
-- WebSocketによるリアルタイム更新
-- APIバージョニング
+- AI 設定 API
+- WebSocket によるリアルタイム更新
+- API バージョニング
 
 これらは初期版の設計範囲には含めない。
 

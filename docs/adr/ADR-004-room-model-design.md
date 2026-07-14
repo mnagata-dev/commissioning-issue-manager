@@ -1,9 +1,9 @@
 # ADR-004: Room Model Design
 
-* **Status:** Accepted
-* **Date:** 2026-06-30
-* **Category:** Domain
-* **Decision Makers:** Masato Nagata
+- **Status:** Accepted
+- **Date:** 2026-06-30
+- **Category:** Domain
+- **Decision Makers:** Masato Nagata
 
 ## Context
 
@@ -17,8 +17,8 @@ Roomモデルの構造について検討した。
 
 Roomは以下の情報のみを管理する。
 
-* Room Number
-* RoomType
+- Room Number
+- RoomType
 
 RoomはRoomTypeを参照する。
 
@@ -34,9 +34,9 @@ Room Numberの重複チェックはService層で行う。
 
 理由
 
-* フロア情報はIssue管理には必須ではない。
-* AREAで十分表現できる。
-* モデルを簡潔に保てる。
+- フロア情報はIssue管理には必須ではない。
+- AREAで十分表現できる。
+- モデルを簡潔に保てる。
 
 ### Roomへhotel_idを保持する
 
@@ -44,24 +44,24 @@ Room Numberの重複チェックはService層で行う。
 
 理由
 
-* RoomTypeからHotelを取得できる。
-* データの重複を避けられる。
-* アプリケーション側で整合性を検証する設計とした。
+- RoomTypeからHotelを取得できる。
+- データの重複を避けられる。
+- アプリケーション側で整合性を検証する設計とした。
 
 ## Consequences
 
 ### メリット
 
-* Roomモデルがシンプルになる。
-* 保守性が向上する。
-* 将来RoomTypeの変更にも対応しやすい。
+- Roomモデルがシンプルになる。
+- 保守性が向上する。
+- 将来RoomTypeの変更にも対応しやすい。
 
 ### デメリット
 
-* Hotelとの整合性はService層で検証する必要がある。
+- Hotelとの整合性はService層で検証する必要がある。
 
 ## Related Documents
 
-* requirements/requirements_v1.0.md
-* design/database_design.md
-* ADR-002: TargetType Definition
+- requirements/requirements_v1.0.md
+- design/database_design.md
+- ADR-002: TargetType Definition
