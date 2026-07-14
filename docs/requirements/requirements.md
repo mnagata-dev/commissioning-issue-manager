@@ -696,26 +696,27 @@ Administrator は Project 作成前に Master Data を登録する。
 ```text
 Hotel
 ├── RoomType
-│     └── Room
-├── User
+├── Room
 └── Project
-        └── Issue
-              ├── Comment
-              └── Attachment
+     └── Issue
+          ├── Room (optional)
+          ├── Comment
+          └── Attachment
+
+User
 ```
 
 Relationship は以下のとおりである。
 
-|Parent|Child|Relationship|
+|Parent|Cardinality|Child|
 |---|---|---|
-|Hotel|RoomType|1 : N|
-|Hotel|Room|1 : N|
-|Hotel|Project|1 : N|
-|Hotel|User|1 : N|
-|RoomType|Room|1 : N|
-|Project|Issue|1 : N|
-|Issue|Comment|1 : N|
-|Issue|Attachment|1 : N|
+|Hotel|1 : N|RoomType|
+|Hotel|1 : N|Room|
+|Hotel|1 : N|Project|
+|RoomType|1 : N|Room|
+|Project|1 : N|Issue|
+|Issue|1 : N|Comment|
+|Issue|1 : N|Attachment|
 
 Room は Hotel に属する。
 
