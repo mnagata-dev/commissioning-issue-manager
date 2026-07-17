@@ -183,15 +183,27 @@ id INTEGER PRIMARY KEY AUTOINCREMENT
 
 ## 5.3 Timestamp
 
-作成日時・更新日時は以下の方針とする。
+日時は UTC で管理する。
 
-|カラム|用途|
-|---|---|
-|created_at|作成日時|
-|updated_at|更新日時|
-|uploaded_at|ファイルアップロード日時|
+Timestamp の生成および更新は Python 側で行い、SQLite 固有の日時関数には依存しない。
 
-更新されない履歴データでは、`updated_at` を持たない場合がある。
+SQLite には、UTC を表す timezone-naive datetime を保存する。
+
+アプリケーション内で Timestamp を生成する際は、UTC の timezone-aware datetime を生成した後、DB 保存前に timezone 情報を除去する。
+
+|カラム|用途|設定方針|
+|---|---|---|
+|created_at|作成日時|Entity 作成時に Python 側で設定する。|
+|updated_at|更新日時|Entity 作成時に設定し、更新処理時に Service Layer から明示的に更新する。|
+|uploaded_at|ファイルアップロード日時|Attachment 作成時に Python 側で設定する。|
+
+以下の方針を採用する。
+
+- DB の `server_default` は使用しない。
+- ORM Event による自動更新は行わない。
+- DB と Python の両方へ重複して default を定義しない。
+- Timestamp は NULL 不可とする。
+- DB から取得した timezone-naive datetime は UTC として扱う。
 
 ---
 
@@ -239,6 +251,73 @@ DB にはファイルのメタデータのみ保存する。
 ファイル本体は Local Storage へ保存する。
 
 `file_path` は絶対パスではなく相対パスで保存する。
+
+---
+
+## 5.8 Enum Storage Policy
+
+Role、Target Type、Category および Status は Python Enum として定義する。
+
+DB には Enum の文字列値を TEXT として保存する。
+
+保存値は各設計書で定義された大文字の文字列と一致させる。
+
+例：
+
+```text
+ENGINEER
+ROOM
+LIGHTING
+OPEN
+```
+
+定義済み値以外の保存を防ぐため、対象カラムには CHECK 制約を設定する。
+
+DB ネイティブの Enum 型は使用しない。
+
+---
+
+## 5.9 Foreign Key and Relationship Policy
+
+Foreign Key には `ON DELETE` を明示的に指定しない。
+
+初期版では、SQLAlchemy の `relationship` に削除 cascade および `delete-orphan` を設定しない。
+
+削除方針は以下のとおりとする。
+
+- Issue は削除しない。
+- Comment は削除しない。
+- Attachment の削除はアプリケーション側で明示的に処理する。
+- Master Data の削除は初期版の Web 機能として提供しない。
+
+ORM の `relationship` は参照およびデータ取得のために使用し、暗黙的な関連データ削除には使用しない。
+
+---
+
+## 5.10 Migration Policy
+
+既存の Alembic Migration 履歴は維持する。
+
+適用済みまたはコミット済みの Migration は削除、統合、置換しない。
+
+データベース設計の変更は、既存 Migration の後続となる新しい Migration として追加する。
+
+Database Models 実装では、既存スキーマを最新版の Database Design に合わせる追加 Migration を作成する。
+
+Migration は以下を満たすこと。
+
+- 既存の Migration から `upgrade` できること。
+- 最新 Revision から直前の Revision へ `downgrade` できること。
+- 新規の空データベースに対して、先頭から最新 Revision まで `upgrade` できること。
+- Migration 履歴を作り直さないこと。
+
+初期開発フェーズでは、既存の開発用データの互換性は保証しない。
+
+初期開発フェーズでは、既存の `users` テーブルに業務データは存在しないことを前提とする。
+
+そのため、`password_hash` を含む新しい必須カラムの追加に伴う既存データ移行は実施しない。
+
+既存テーブルへ新しい必須カラムを追加する場合、既存レコードの移行値は設定しない。必要に応じて開発用データベースを削除し、新規の空データベースに対して Migration を適用する。
 
 ---
 
@@ -486,8 +565,11 @@ Issue を管理する。
 - target_type は定義済み Target Type のみ許可する。
 - category は定義済み Category のみ許可する。
 - status は定義済み Status のみ許可する。
-- target_type が ROOM の場合、room_id を指定し、target は null とする。
-- target_type が OTHER の場合、room_id は null とし、target に対象名を保存する。
+- Target Type と `room_id` および `target` の組み合わせは、以下の業務ルールに従う。
+  - `ROOM` の場合、`room_id` を指定し、`target` は null とする。
+  - `OTHER` の場合、`room_id` は null とし、`target` に対象名を保存する。
+- 上記の組み合わせは Service Layer で検証する。
+- 上記の組み合わせに対する複合 CHECK 制約は DB へ定義しない。
 
 ---
 
@@ -680,9 +762,46 @@ Business Data の整合性は Issue を中心として維持する。
 
 ---
 
-# 9. Indexes
+## 8.5 Constraint Naming
+
+制約名は以下の形式とする。
+
+|種類|形式|例|
+|---|---|---|
+|Primary Key|`pk_<table>`|`pk_users`|
+|Foreign Key|`fk_<table>_<column>_<referred_table>`|`fk_projects_hotel_id_hotels`|
+|Unique Constraint|`uq_<table>_<column>`|`uq_users_username`|
+|複合Unique Constraint|`uq_<table>_<column1>_<column2>`|`uq_rooms_hotel_id_room_number`|
+|Check Constraint|`ck_<table>_<purpose>`|`ck_attachments_file_size_positive`|
+
+Alembic と SQLAlchemy で同一の命名規則を使用する。
+
+---
+
+## 9. Indexes
 
 検索性能向上のため、以下のインデックスを作成する。
+
+Index 名は以下の形式とする。
+
+```text
+ix_<table>_<column>
+```
+
+例：
+
+```text
+ix_projects_hotel_id
+ix_room_types_hotel_id
+ix_rooms_hotel_id
+ix_issues_project_id
+ix_issues_room_id
+ix_issues_status
+ix_issues_category
+ix_issues_target_type
+ix_comments_issue_id
+ix_attachments_issue_id
+```
 
 |テーブル|カラム|用途|
 |---|---|---|
