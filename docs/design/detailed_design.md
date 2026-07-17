@@ -338,6 +338,40 @@ Comment および Attachment は必ず Issue に属する。
 
 ---
 
+## 7.4 ORM Mapping Policy
+
+SQLAlchemy Model は SQLAlchemy 2.x の型付き ORM を使用する。
+
+Role、Target Type、Category および Status は Python Enum として定義し、DB には Enum の文字列値を保存する。
+
+`relationship` には必要に応じて `back_populates` を使用する。
+
+初期版では、`relationship` に削除 cascade および `delete-orphan` を設定しない。
+
+Foreign Key には `ON DELETE` を指定しない。
+
+Issue の `created_by` と `updated_by` のように同一テーブルを複数回参照する場合は、`relationship` の `foreign_keys` を明示する。
+
+---
+
+## 7.5 Timestamp Policy
+
+Timestamp は UTC で管理する。
+
+アプリケーション内では UTC の timezone-aware datetime を生成する。
+
+SQLite へ保存する際は timezone 情報を除去し、UTC を表す timezone-naive datetime として保存する。
+
+DB から取得した timezone-naive datetime は UTC として扱う。
+
+`created_at`、`updated_at` および `uploaded_at` は Python 側で設定する。
+
+`updated_at` は Service Layer の更新処理で明示的に更新する。
+
+DB の `server_default` および ORM Event による自動更新は使用しない。
+
+---
+
 # 8. DTO Design
 
 本章では、API で利用する DTO (Data Transfer Object) を定義する。
@@ -918,9 +952,11 @@ OTHER
 |ROOM|room_id を必須とし、target は null とする。|
 |OTHER|target を必須とし、room_id は null とする。|
 
-Database では `room_id` の NULL 制約のみを管理する。
+Database では `room_id` および `target` の個別の NULL 許可のみを管理する。
 
 Target Type と `room_id` および `target` の整合性は、Service Layer で検証する。
+
+Target Type と `room_id` および `target` の組み合わせを検証する複合 CHECK 制約は Database に定義しない。
 
 ---
 
