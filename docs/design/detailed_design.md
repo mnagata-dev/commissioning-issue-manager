@@ -808,8 +808,6 @@ Repository はデータアクセスのみを担当し、業務ロジックを持
 find_by_id(user_id: int) -> User | None
 
 find_by_username(username: str) -> User | None
-
-verify_password(password: str, password_hash: str) -> bool
 ```
 
 ---
