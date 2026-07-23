@@ -679,6 +679,10 @@ update_status(
 
 `create_issue()` は作成した Issue の ID を返却する。
 
+Issue 新規登録時の初期 Status は `OPEN` とする。
+`CreateIssueRequest` では Status を受け取らず、`IssueService.create_issue()` が `Status.OPEN` を設定する。
+Model または Database の default には依存しない。
+
 API レスポンスの生成は API Router が担当する。
 
 ---
