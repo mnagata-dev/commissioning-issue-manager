@@ -595,8 +595,9 @@ Service Layer は業務ロジックを担当し、API RouterとRepository Layer 
 
 ### Responsibilities
 
+- Username による User 取得
+- Password Hash の検証
 - ログイン認証
-- ログアウト処理
 - 現在の User 取得
 
 ### Main Methods
@@ -604,10 +605,19 @@ Service Layer は業務ロジックを担当し、API RouterとRepository Layer 
 ```python
 login(username: str, password: str) -> CurrentUserResponse
 
-logout(user_id: int) -> None
-
 get_current_user(user_id: int) -> CurrentUserResponse
 ```
+
+`login()` は `UserRepository.find_by_username()` を使用して User を取得し、
+`app/core/security.py` の Password verification 処理を使用して Password を検証する。
+
+Username が存在しない場合と Password が一致しない場合は、いずれも `AuthenticationError` とする。
+外部へ返すエラー内容から、Username の存在有無を判別できないようにする。
+
+`get_current_user()` で指定された User が存在しない場合は、認証情報が無効であるものとして `AuthenticationError` とする。
+
+認証状態の保持方式は本段階では定義しない。
+そのため `logout()` は AuthService には実装せず、Cookie、Session、Token 等の認証方式を確定する後続設計で責務を決定する。
 
 ---
 
@@ -1088,6 +1098,16 @@ API では共通エラーレスポンス形式を返す。
 認証済み User のみ API を利用できる。
 
 未認証の場合は `401 Unauthorized` を返す。
+
+Password は平文では保存せず、Password Hash として保存する。
+
+Password hashing には `pwdlib` を使用し、Argon2 対応を有効化する。
+
+Password hashing および verification には `PasswordHash.recommended()` を使用する。
+
+Password hashing の具体的なパラメーターは `pwdlib` の recommended configuration に従い、アプリケーション側では個別に固定しない。
+
+Password hashing および verification の処理は `app/core/security.py` に集約する。
 
 ---
 
