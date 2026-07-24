@@ -142,6 +142,10 @@ backend/
 │   │   ├── security.py
 │   │   └── exceptions.py
 │   │
+│   ├── clients/
+│   │   ├── __init__.py
+│   │   └── ollama_client.py
+│   │
 │   ├── api/
 │   │   ├── deps.py
 │   │   └── routes/
@@ -701,11 +705,15 @@ API レスポンスの生成は API Router が担当する。
 
 ### Responsibilities
 
-- 音声認識後のテキストまたは入力テキストの解析
-- Ollama 呼び出し
+- Project 存在確認
+- Target Type と Room / Target の整合性検証
+- Room 存在確認および Project の Hotel との整合性検証
+- 入力テキストの検証
+- Ollama Client 呼び出し
 - Category および Description の AI Draft 生成
-- AI 結果の基本検証
+- AI 結果の検証
 - AI が Target Type、Room および Target を返却しないことの制御
+- Ollama 処理失敗時の `AIServiceError` への変換
 
 ### Main Methods
 
@@ -716,7 +724,23 @@ generate_issue_draft(
 ) -> GenerateDraftResponse
 ```
 
-AIServiceはIssueを保存しない。
+AIService は Issue を保存しない。
+
+`generate_issue_draft()` では、Project の存在、Target Type と Room / Target の整合性、および入力テキストを検証してから Ollama Client を呼び出す。
+
+Target Type の検証ルールは Issue 登録時と同じく以下とする。
+
+- `ROOM`: `room_id` を必須とし、`target` は `None` とする。
+- `OTHER`: `room_id` は `None` とし、`target` を必須とする。
+
+`ROOM` の場合は Room が存在し、その Room が Project と同じ Hotel に属することを検証する。
+
+`input_text` が空文字の場合は `ValidationError` とする。
+入力値を trim、翻訳、正規化または補完しない。
+
+`user_id` は後続の認証済み API から渡される値であり、本 Service では User の再取得や認可判定には使用しない。
+
+AIService は SQLAlchemy Session を保持せず、commit および rollback を行わない。
 
 ---
 
@@ -1198,21 +1222,98 @@ AI Draft は以下を返却する。
 
 ## 14.4 AI Prompt Policy
 
-AI への Prompt では以下を明示する。
+Ollama への Prompt は System Message と User Message に分離する。
 
-- Category は定義済み Category のいずれかを返却する。
-- Description は入力内容を自然な文章へ整形する。
-- Target Type、Room および Target は推定しない。
-- AI は Issue を保存しない。
-- Category を判断できない場合は OTHER を返却する。
+System Message では以下を明示する。
+
+- CIM の Issue Draft 生成支援であること。
+- 出力は Category と Description のみとすること。
+- Category は定義済み Category のいずれかとすること。
+- Description は入力内容を自然な Issue 文へ整形すること。
+- 入力に存在しない事実を追加しないこと。
+- Target Type、Room および Target を推定または変更しないこと。
+- AI は Issue を保存しないこと。
+- Category を判断できない場合は `OTHER` を返却すること。
+
+User Message には以下を入力する。
+
+- ユーザーが選択した Target Type
+- `ROOM` の場合は選択済み Room の Room Number
+- `OTHER` の場合は選択済み Target
+- `input_text`
+
+`project_id` および User 情報は Prompt に含めない。
+
+Target Type、Room および Target は Description 生成の文脈としてのみ使用し、AI の出力項目には含めない。
 
 ---
 
 ## 14.5 AI Error Handling
 
-Ollama 呼び出しに失敗した場合は `AIServiceError` を発生させる。
+以下の場合は `AIServiceError` とする。
+
+- Ollama への接続失敗
+- Ollama 呼び出しの timeout
+- Ollama がエラーレスポンスを返した場合
+- Ollama のレスポンスが期待する Structured Output として解析できない場合
+- Category が定義済み Category に含まれない場合
+- Description が欠落している場合
+- Description が文字列でない場合
+- Description が空文字の場合
+- AI 利用時に Ollama Model が設定されていない場合
+
+不正な Category をアプリケーション側で `OTHER` へ変換しない。
+
+`OTHER` は AI が Category を判断できない場合に返すよう Prompt で指示する値であり、任意の不正出力に対する fallback ではない。
+
+Ollama の endpoint、内部例外、Prompt、Provider Response などの内部情報は利用者向けエラーメッセージへ含めない。
 
 AI 処理に失敗しても、ユーザーが手入力で Issue を登録できるようにする。
+
+---
+
+## 14.6 Ollama Integration
+
+Ollama との通信には公式 `ollama` Python Client を使用する。
+
+初期版では同期 `Client` と `chat()` を使用する。
+
+Streaming は使用しない。
+
+Ollama の設定は `app/core/config.py` で管理する。
+
+|設定|環境変数|Default|
+|---|---|---|
+|Host|`CIM_OLLAMA_HOST`|`http://localhost:11434`|
+|Model|`CIM_OLLAMA_MODEL`|なし|
+|Timeout|`CIM_OLLAMA_TIMEOUT_SECONDS`|`60` 秒|
+
+Model は環境ごとに変更可能とし、アプリケーションコードへ固定しない。
+
+`CIM_OLLAMA_MODEL` が設定されていない場合でもアプリケーション自体は起動可能とする。
+AI Draft 利用時に Model が未設定の場合は `AIServiceError` とする。
+
+Ollama Client は `app/clients/ollama_client.py` に配置し、Provider との通信のみを担当する。
+
+AIService は Ollama 固有の通信処理を直接実装しない。
+
+Ollama へのリクエストでは以下を使用する。
+
+- Operation: `chat()`
+- Streaming: `False`
+- Temperature: `0`
+- Response Format: JSON Schema による Structured Output
+
+Structured Output 用の内部 Pydantic Model を定義し、以下の2項目のみを受け取る。
+
+```python
+category: Category
+description: str
+```
+
+Structured Output の JSON Schema は Pydantic Model の `model_json_schema()` から生成する。
+
+Ollama が返した Message Content は Pydantic で検証してから `GenerateDraftResponse` へ変換する。
 
 ---
 
