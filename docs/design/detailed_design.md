@@ -556,6 +556,7 @@ uploaded_at: datetime
 
 ```python
 id: int
+file_name: str
 message: str
 ```
 
@@ -770,10 +771,14 @@ Commentは編集・削除しない。
 ### Responsibilities
 
 - Issue 存在確認
-- ファイル検証
-- ファイル保存
+- User 存在確認
+- ファイル名、ファイル形式、ファイルサイズの検証
+- StorageService を使用したファイル保存
 - Attachment メタデータ登録
-- Attachment 削除
+- Upload 失敗時のファイル補償削除
+- Attachment と Issue の所属確認
+- StorageService を使用した Attachment 削除
+- DB と Local Storage の整合性制御
 
 ### Main Methods
 
@@ -791,6 +796,14 @@ delete_attachment(
 ) -> None
 ```
 
+`upload_attachment()` および `delete_attachment()` では User の存在を確認する。
+
+`delete_attachment()` の `user_id` は初期版では User 存在確認にのみ使用し、削除者の監査情報や認可判定には使用しない。
+
+AttachmentService は DB Transaction を管理する。
+
+Repository は commit / rollback を行わない。
+
 ---
 
 ## 9.8 StorageService
@@ -799,8 +812,11 @@ delete_attachment(
 
 - ファイル保存
 - ファイル削除
+- 削除対象ファイルの一時退避
+- 一時退避ファイルの復元
 - 保存パス生成
-- ファイル名生成
+- 保存用ファイル名生成
+- Storage Root 外へのパスアクセス防止
 
 ### Main Methods
 
@@ -814,6 +830,23 @@ delete_file(
     file_path: str
 ) -> None
 ```
+
+DB 削除との整合性制御に必要な一時退避・復元処理は StorageService の内部責務とする。
+
+`StoredFile` は Storage Layer 内部で使用するデータ構造とし、以下を保持する。
+
+```python
+@dataclass(frozen=True)
+class StoredFile:
+    file_name: str
+    file_path: str
+    mime_type: str
+    file_size: int
+```
+
+`file_path` は Storage Root からの相対パスとする。
+
+`StoredFile` は API の公開 DTO として使用しない。
 
 ---
 
@@ -1333,49 +1366,193 @@ DB には添付ファイルのメタデータのみ保存する。
 
 ## 15.2 Storage Directory
 
-初期版では以下の構成を基本とする。
+Local Storage Root は `app/core/config.py` で管理する。
+
+|設定|環境変数|Default|
+|---|---|---|
+|Storage Root|`CIM_STORAGE_ROOT`|`./storage`|
+
+`CIM_STORAGE_ROOT` が相対パスの場合は、Backend プロセスの Current Working Directory を基準として解決する。
+
+初期版では Attachment を以下の構成で保存する。
 
 ```text
 storage/
 ├── attachments/
 │   └── issues/
 │       └── {issue_id}/
-│           ├── photo_001.jpg
-│           └── video_001.mp4
+│           └── {generated_file_name}
+├── .trash/
 └── database/
 ```
+
+DB には Storage Root を含まない相対パスのみ保存する。
+
+テストでは実際の Storage Root を使用せず、一時ディレクトリを使用する。
 
 ---
 
 ## 15.3 File Path Policy
 
-DB に保存する `file_path` は相対パスとする。
+DB に保存する `file_path` は Storage Root からの相対パスとする。
+
+保存形式は以下とする。
+
+```text
+attachments/issues/{issue_id}/{generated_file_name}
+```
 
 例：
 
 ```text
-attachments/issues/101/photo_001.jpg
+attachments/issues/101/550e8400-e29b-41d4-a716-446655440000.jpg
 ```
+
+StorageService は、解決後の物理パスが必ず Storage Root 配下であることを確認する。
+
+Client から受け取ったファイル名を保存パスとして直接使用しない。
+
+絶対パスおよび `..` 等による Storage Root 外への Path Traversal を許可しない。
 
 ---
 
 ## 15.4 File Name Policy
 
-保存時には、元ファイル名とは別に保存用ファイル名を生成する。
+保存用ファイル名は UUID v4 と元ファイルの許可済み拡張子を組み合わせて生成する。
 
-元ファイル名は `original_file_name` としてDBに保存する。
+形式：
+
+```text
+{uuid_v4}{extension}
+```
+
+例：
+
+```text
+550e8400-e29b-41d4-a716-446655440000.jpg
+```
+
+UUID v4 により、同名ファイルおよび同時アップロード時の衝突を回避する。
+
+拡張子は小文字へ正規化する。
+
+元ファイル名は `original_file_name` として DB に保存する。
+
+元ファイル名は以下を満たす必要がある。
+
+- `None` ではない
+- 空文字ではない
+- ファイル名のみであり、ディレクトリ部分を含まない
+- 絶対パスではない
+- `/` または `\` を含まない
+- 制御文字を含まない
+- 許可済み拡張子を持つ
+
+条件を満たさない場合は `ValidationError` とする。
 
 ---
 
-## 15.5 File Delete Policy
+## 15.5 File Type Policy
+
+初期版で保存を許可するファイル形式は以下とする。
+
+|種別|MIME Type|拡張子|
+|---|---|---|
+|JPEG Image|`image/jpeg`|`.jpg`, `.jpeg`|
+|PNG Image|`image/png`|`.png`|
+|MP4 Video|`video/mp4`|`.mp4`|
+|QuickTime Video|`video/quicktime`|`.mov`|
+
+ファイル形式の検証では、アップロード時に受け取った MIME Type と元ファイル名の拡張子の両方を確認する。
+
+拡張子は大文字・小文字を区別せずに判定し、保存時には小文字へ正規化する。
+
+MIME Type と拡張子は、上記の表で対応する組み合わせでなければならない。
+
+例えば以下は有効とする。
+
+```text
+image/jpeg + .jpg
+image/jpeg + .jpeg
+image/png + .png
+video/mp4 + .mp4
+video/quicktime + .mov
+```
+
+許可されていない MIME Type、許可されていない拡張子、または MIME Type と拡張子の組み合わせが一致しない場合は `ValidationError` とする。
+
+初期版ではファイル内容のシグネチャ解析による形式判定は行わない。
+
+MIME Type はアップロード時に受け取った値を使用し、許可済みの MIME Type として検証した後、Attachment の `mime_type` として DB に保存する。
+
+---
+
+## 15.6 File Size Policy
+
+ファイルサイズ制限を以下とする。
+
+|種別|最大サイズ|
+|---|---:|
+|Image|10 MiB|
+|Video|100 MiB|
+
+1 MiB は `1024 * 1024` bytes とする。
+
+0 byte のファイルは許可しない。
+
+ファイルサイズは実際に読み取った byte 数から算出し、DB の `file_size` に保存する。
+
+制限を超える場合は `ValidationError` とし、Local Storage へ保存しない。
+
+---
+
+## 15.7 File Delete Policy
 
 Attachment 削除時には以下を実施する。
 
-1. DB の Attachment 情報を取得する。
-2. Local Storage のファイルを削除する。
-3. DB の Attachment 情報を削除する。
+1. Issue の存在を確認する。
+2. User の存在を確認する。
+3. DB の Attachment 情報を取得する。
+4. Attachment が指定 Issue に属することを確認する。
+5. Local Storage の対象ファイルを同一 Storage Root 内の `.trash/` へ一時移動する。
+6. DB の Attachment 情報を削除する。
+7. DB Transaction を commit する。
+8. `.trash/` の一時ファイルを完全削除する。
 
-削除失敗時はエラーとして扱い、ログへ記録する。
+物理ファイルの一時移動後、DB 削除または commit に失敗した場合は、DB Transaction を rollback し、一時ファイルを元の場所へ復元する。
+
+対象の物理ファイルが既に存在しない場合は、物理ファイルは既に削除済みとみなし、DB の Attachment 情報の削除を継続する。
+
+DB commit 後の `.trash/` 完全削除に失敗した場合は `StorageError` としてログへ記録する。
+
+この場合、Attachment は利用者から見て削除済みであり、残存する `.trash/` ファイルは内部 Storage の孤立ファイルとして扱う。
+
+初期版では自動 Recovery Queue は実装しない。
+
+---
+
+## 15.8 Upload Compensation Policy
+
+Attachment Upload では以下の順序で処理する。
+
+1. Issue の存在を確認する。
+2. User の存在を確認する。
+3. ファイルを検証する。
+4. Local Storage へファイルを保存する。
+5. Attachment メタデータを Repository へ登録する。
+6. DB Transaction を commit する。
+
+Local Storage への保存に失敗した場合は DB 登録を行わない。
+
+ファイル保存後に Attachment メタデータ登録または DB commit が失敗した場合は、DB Transaction を rollback し、保存済みファイルを削除する。
+
+補償削除にも失敗した場合は `StorageError` とし、元の DB 例外より補償失敗を外部へ報告する。
+
+DB Transaction は rollback された状態を維持する。
+
+削除できなかった物理ファイルは孤立ファイルとして残る可能性があるため、内部ログへ記録する。
+
+初期版では孤立ファイルの自動回収処理や Recovery Queue は実装しない。
 
 ---
 

@@ -794,7 +794,7 @@ multipart/form-data
 ```json
 {
   "id": 1,
-  "file_name": "issue_photo_001.jpg",
+  "file_name": "550e8400-e29b-41d4-a716-446655440000.jpg",
   "message": "Attachment uploaded"
 }
 ```
@@ -828,7 +828,7 @@ Issue に添付されている Attachment 一覧を取得する。
   "items": [
     {
       "id": 1,
-      "file_name": "issue_photo_001.jpg",
+      "file_name": "550e8400-e29b-41d4-a716-446655440000.jpg",
       "mime_type": "image/jpeg",
       "file_size": 204800,
       "uploaded_at": "2026-06-30T10:25:00"
