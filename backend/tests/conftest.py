@@ -1,11 +1,14 @@
 """Shared pytest fixtures."""
 
+import os
 from collections.abc import Generator
 from pathlib import Path
 
 import pytest
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session, sessionmaker
+
+os.environ.setdefault("CIM_SESSION_SECRET", "test-only-session-secret")
 
 
 @pytest.fixture

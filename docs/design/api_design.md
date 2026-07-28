@@ -140,9 +140,13 @@
 
 ## 5.4 Authentication
 
-認証が必要な API では、認証済み User のみアクセスできる。
+認証には Cookie-based Session を使用する。
 
-未認証の場合は `401 Unauthorized` を返す。
+ログイン成功時、Session に認証済み User の `id` を `user_id` として保存する。
+
+認証が必要な API では、Session に保存された `user_id` を基に認証済み User を取得する。
+
+Session が存在しない場合、Session に `user_id` が存在しない場合、または `user_id` に対応する User が存在しない場合は `401 Unauthorized` を返す。
 
 ---
 
@@ -181,6 +185,10 @@ POST /api/auth/login
 ユーザーがログインする。
 
 username はログイン ID とし、メールアドレス形式も利用できる。
+
+認証成功時、Session に認証済み User の `id` を `user_id` として保存する。
+
+認証失敗時は Session を作成せず、`401 Unauthorized` を返す。
 
 ### Request
 
@@ -225,6 +233,10 @@ POST /api/auth/logout
 
 ユーザーがログアウトする。
 
+認証済みであることを確認した後、Session を削除する。
+
+ログアウト成功後、それまで使用していた Session では認証が必要な API を利用できない。
+
 ### Response
 
 ```json
@@ -252,6 +264,10 @@ GET /api/auth/me
 ### Description
 
 ログイン中のユーザー情報を取得する。
+
+Session に保存された `user_id` を基に現在の User 情報を取得する。
+
+Session が存在しない場合、Session に `user_id` が存在しない場合、または `user_id` に対応する User が存在しない場合は `401 Unauthorized` を返す。
 
 ### Response
 
