@@ -373,9 +373,10 @@ FastAPI TestClient を利用する。
 
 |API|テスト|
 |---|---|
-|Login|正常・異常 (username にメールアドレス形式を含む)|
-|Logout|正常|
-|Current User|正常・未認証|
+|Login|正常・異常 (username にメールアドレス形式を含む)・認証成功時に Session が作成されること|
+|Login Failure|認証失敗時に Session が作成されず、401 Unauthorized を返すこと|
+|Logout|正常・未認証・Logout 後にそれまでの Session で認証済み API を利用できないこと|
+|Current User|正常・Session なし・Session に user_id なし・存在しない User ID|
 
 ---
 
@@ -655,8 +656,13 @@ AI Draft は保存されず、ユーザーが確認・修正した後に Issue �
 
 以下を確認する。
 
-- 未認証
-- 不正認証情報
+- Username が存在しない場合に `401 Unauthorized` を返すこと。
+- Password が一致しない場合に `401 Unauthorized` を返すこと。
+- Username 不存在と Password 不一致で、外部へ返す認証エラー内容から Username の存在有無を判別できないこと。
+- Session が存在しない場合に `401 Unauthorized` を返すこと。
+- Session に `user_id` が存在しない場合に `401 Unauthorized` を返すこと。
+- Session の `user_id` に対応する User が存在しない場合に `401 Unauthorized` を返すこと。
+- Logout 後、それまでの Session で認証が必要な API へアクセスした場合に `401 Unauthorized` を返すこと。
 
 ---
 

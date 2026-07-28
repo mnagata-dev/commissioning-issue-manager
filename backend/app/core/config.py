@@ -23,6 +23,7 @@ class Settings:
     ollama_host: str = "http://localhost:11434"
     ollama_model: str | None = None
     ollama_timeout_seconds: float = 60.0
+    session_secret: str | None = None
 
     @classmethod
     def from_environment(cls) -> "Settings":
@@ -41,6 +42,7 @@ class Settings:
                     str(defaults.ollama_timeout_seconds),
                 )
             ),
+            session_secret=os.getenv("CIM_SESSION_SECRET"),
         )
 
 

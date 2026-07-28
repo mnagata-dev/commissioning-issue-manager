@@ -621,8 +621,13 @@ Username が存在しない場合と Password が一致しない場合は、い�
 
 `get_current_user()` で指定された User が存在しない場合は、認証情報が無効であるものとして `AuthenticationError` とする。
 
-認証状態の保持方式は本段階では定義しない。
-そのため `logout()` は AuthService には実装せず、Cookie、Session、Token 等の認証方式を確定する後続設計で責務を決定する。
+認証状態は API Layer が Cookie-based Session として管理する。
+
+AuthService は HTTP Request、Cookie または Session を直接扱わない。
+
+Login 成功後の Session 作成および Logout 時の Session 削除は API Layer の責務とする。
+
+そのため `logout()` は AuthService には実装しない。
 
 ---
 
@@ -1166,9 +1171,61 @@ Password hashing の具体的なパラメーターは `pwdlib` の recommended c
 
 Password hashing および verification の処理は `app/core/security.py` に集約する。
 
+認証状態の保持には Cookie-based Session を使用する。
+
+HTTP Session の実装には Starlette の `SessionMiddleware` を使用する。
+
+Session には認証済み User の `user_id` のみを保持する。
+
+```python
+{
+    "user_id": 1
+}
+```
+
+Username、Role、Password Hash などの User 情報は Session に保持しない。
+
+認証済み User 情報が必要な場合は、Session から取得した `user_id` を使用して `AuthService.get_current_user()` から取得する。
+
+JWT、Bearer Token、Refresh Token および Server-side Session Database は初期版では使用しない。
+
 ---
 
-## 13.2 User Roles
+## 13.2 Session Configuration
+
+Session Cookie の設定を以下とする。
+
+|設定|値|
+|---|---|
+|Cookie Name|`cim_session`|
+|Session Data|`user_id` のみ|
+|HttpOnly|`True`|
+|SameSite|`lax`|
+|Secure|`False`|
+|Path|`/`|
+|Max Age|8時間|
+
+Session の署名に使用する Secret は `app/core/config.py` で管理する。
+
+|設定|環境変数|Default|
+|---|---|---|
+|Session Secret|`CIM_SESSION_SECRET`|なし|
+
+`CIM_SESSION_SECRET` は必須設定とし、未設定の場合はアプリケーションを起動しない。
+
+Session Secret をソースコードへ固定しない。
+
+初期版はローカル LAN 上の HTTP 環境での利用を想定するため、Session Cookie の `Secure` は `False` とする。
+
+HTTPS 環境へ移行する場合は `Secure=True` へ変更する。
+
+Session 有効期間は8時間とする。
+
+8時間経過後は再認証を必要とする。
+
+---
+
+## 13.3 User Roles
 
 初期版では以下の Role を定義する。
 
@@ -1179,7 +1236,7 @@ ENGINEER
 
 ---
 
-## 13.3 Authorization Policy
+## 13.4 Authorization Policy
 
 Role に応じて利用可能な機能を制御する。
 
@@ -1194,19 +1251,96 @@ Role に応じて利用可能な機能を制御する。
 
 ---
 
-## 13.4 API Dependency
+## 13.5 API Dependency
 
 FastAPI の Dependency で認証済み User を取得する。
 
+Authentication Dependency は Request の Session から `user_id` を取得する。
+
+Session に `user_id` が存在しない場合は `AuthenticationError` とし、API では `401 Unauthorized` を返す。
+
+Session に `user_id` が存在する場合は、`AuthService.get_current_user(user_id)` を使用して現在の User 情報を取得する。
+
 ```python
-get_current_user() -> User
+get_current_user() -> CurrentUserResponse
 ```
 
-Role 制御が必要な API では、Role 確認用 Dependency を利用する。
+Session に保存された `user_id` に対応する User が存在しない場合も、認証状態が無効であるものとして `AuthenticationError` とする。
+
+API Router は Dependency から取得した `CurrentUserResponse.id` を、必要に応じて各 Service の `user_id` として渡す。
+
+Authentication Dependency は以下を行わない。
+
+- Password verification
+- Role authorization
+- Database への直接 Query
+- Session の作成
+- Session の削除
+
+Role 制御が必要な API では、Authentication とは別の Role 確認用 Dependency を利用する。
 
 ```python
-require_administrator(user: User) -> User
+require_administrator(
+    user: CurrentUserResponse
+) -> CurrentUserResponse
 ```
+
+---
+
+## 13.6 Authentication API Session Flow
+
+### Login
+
+`POST /api/auth/login` では以下の順序で処理する。
+
+1. Login Request から Username と Password を取得する。
+2. `AuthService.login()` を呼び出す。
+3. 認証成功時、Session に認証済み User の `id` を `user_id` として保存する。
+4. Login Response を返す。
+
+```python
+request.session["user_id"] = current_user.id
+```
+
+認証失敗時は Session を作成せず、`401 Unauthorized` を返す。
+
+### Current User
+
+`GET /api/auth/me` では Authentication Dependency を使用する。
+
+1. Session から `user_id` を取得する。
+2. `AuthService.get_current_user(user_id)` を呼び出す。
+3. `CurrentUserResponse` を返す。
+
+Session が存在しない場合、または Session 内の `user_id` が無効な場合は `401 Unauthorized` を返す。
+
+### Logout
+
+`POST /api/auth/logout` では Authentication Dependency により認証済みであることを確認した後、Session を削除する。
+
+```python
+request.session.clear()
+```
+
+Logout は API Layer の責務とし、`AuthService.logout()` は定義しない。
+
+Logout 成功後、それまで使用していた Session では認証済み API を利用できない。
+
+---
+
+## 13.7 CSRF Policy
+
+初期版では Frontend と Backend を同一 Origin で提供する。
+
+Session Cookie は `SameSite=lax` とする。
+
+初期版では専用の CSRF Token は導入しない。
+
+状態を変更する API は `POST`、`PUT`、`PATCH`、`DELETE` 等の適切な HTTP Method を使用し、GET Request では業務データを変更しない。
+
+CORS で任意の Origin を許可しない。
+
+将来、Frontend と Backend を別 Origin で運用する場合、または外部ネットワークへ公開する場合は、CSRF 対策および Cookie Policy を再検討する。
 
 ---
 

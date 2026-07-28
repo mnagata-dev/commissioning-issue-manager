@@ -2,7 +2,9 @@
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+import pytest
 
+from app.core.config import Settings
 from app.core.exceptions import ValidationError
 from app.main import app, create_app
 
@@ -18,11 +20,21 @@ def test_module_app_is_fastapi() -> None:
 
 
 def test_application_has_no_undefined_routes() -> None:
-    """No root, health, or business route is registered."""
-    paths = {route.path for route in app.routes}
+    """Only the approved authentication API routes are registered."""
+    paths = set(app.openapi()["paths"])
     assert "/" not in paths
     assert "/health" not in paths
-    assert not any(path.startswith("/api/") for path in paths)
+    assert {path for path in paths if path.startswith("/api/")} == {
+        "/api/auth/login",
+        "/api/auth/logout",
+        "/api/auth/me",
+    }
+
+
+@pytest.mark.parametrize("session_secret", [None, ""])
+def test_create_app_requires_session_secret(session_secret: str | None) -> None:
+    with pytest.raises(RuntimeError, match="CIM_SESSION_SECRET"):
+        create_app(Settings(session_secret=session_secret))
 
 
 def test_application_error_uses_common_response() -> None:
