@@ -287,11 +287,21 @@ Repository は Mock 化し、業務ロジックのみを検証する。
 
 |テスト項目|内容|
 |---|---|
-|Upload Image|画像登録|
-|Upload Video|動画登録|
-|Delete Attachment|削除|
-|Invalid Extension|不正拡張子|
-|Large File|サイズ超過|
+|Upload Image|JPEG または PNG の画像を登録できること|
+|Upload Video|MP4 または QuickTime の動画を登録できること|
+|Delete Attachment|Attachment を削除できること|
+|Issue Not Found|存在しない Issue へのアップロードまたは削除でエラーとなること|
+|Attachment Not Found|存在しない Attachment の削除でエラーとなること|
+|User Not Found|存在しない User によるアップロードまたは削除でエラーとなること|
+|Invalid File Name|元ファイル名が不正な場合にエラーとなること|
+|Invalid File Type|許可されていない MIME Type または拡張子を拒否すること|
+|MIME Type and Extension Mismatch|MIME Type と拡張子の組み合わせが不正な場合にエラーとなること|
+|Large Image|10 MiB を超える画像を拒否すること|
+|Large Video|100 MiB を超える動画を拒否すること|
+|Empty File|空ファイルを拒否すること|
+|Upload Compensation|DB 登録失敗時に保存済みファイルを削除すること|
+|Delete Staging|削除時に物理ファイルを `.trash/` へ一時退避してから DB 情報を削除すること|
+|Delete Restore|DB 削除失敗時に `.trash/` のファイルを元の場所へ復元すること|
 
 ---
 
@@ -554,15 +564,23 @@ AI Draft は保存されず、ユーザーが確認・修正した後に Issue �
 
 |テスト項目|内容|
 |---|---|
-|Image Upload|画像をアップロードできること|
-|Video Upload|動画をアップロードできること|
+|JPEG Upload|JPEG 画像をアップロードできること|
+|PNG Upload|PNG 画像をアップロードできること|
+|MP4 Upload|MP4 動画をアップロードできること|
+|QuickTime Upload|QuickTime 動画をアップロードできること|
 |Multiple Uploads|同一 Issue に複数の Attachment を登録できること|
 |Issue Not Found|存在しない Issue へのアップロードでエラーとなること|
-|Invalid File|不正なファイル形式を拒否すること|
-|Large File|サイズ超過時にエラーとなること|
-|Empty File|空ファイルを拒否すること|
-|Generated File Name|保存用ファイル名が生成されること|
-|Relative File Path|DB に相対パスが保存されること|
+|User Not Found|存在しない User によるアップロードでエラーとなること|
+|Invalid File Name|元ファイル名が欠落、空文字、パス形式、または制御文字を含む場合にエラーとなること|
+|Invalid MIME Type|許可されていない MIME Type を拒否すること|
+|Invalid Extension|許可されていない拡張子を拒否すること|
+|MIME Type and Extension Mismatch|MIME Type と拡張子の組み合わせが不正な場合にエラーとなること|
+|Image Size Limit|画像は 10 MiB 以下を許可し、10 MiB を超える場合にエラーとなること|
+|Video Size Limit|動画は 100 MiB 以下を許可し、100 MiB を超える場合にエラーとなること|
+|Empty File|0 byte のファイルを拒否すること|
+|Generated File Name|保存用ファイル名が UUID v4 と元ファイルの拡張子から生成されること|
+|Unique File Name|同じ元ファイル名を複数回アップロードしても保存用ファイル名が衝突しないこと|
+|Relative File Path|DB に Storage Root からの相対パスが保存されること|
 |Metadata Registration|ファイル情報が DB に登録されること|
 |Storage Save|ファイル本体が Local Storage に保存されること|
 
@@ -585,12 +603,15 @@ AI Draft は保存されず、ユーザーが確認・修正した後に Issue �
 |テスト項目|内容|
 |---|---|
 |Delete Attachment|添付ファイルを削除できること|
-|Storage Delete|Local Storage のファイルも削除されること|
-|Metadata Delete|DB の管理情報も削除されること|
+|Delete Staging|物理ファイルが Storage Root 配下の `.trash/` へ一時退避されること|
+|Metadata Delete|一時退避後に DB の Attachment 情報が削除されること|
+|Storage Delete|DB commit 成功後に `.trash/` の物理ファイルが削除されること|
 |Issue Not Found|存在しない Issue を指定した場合にエラーとなること|
 |Attachment Not Found|存在しない Attachment を指定した場合にエラーとなること|
 |Already Deleted Attachment|既に削除済みの Attachment を指定した場合にエラーとなること|
 |Attachment and Issue Mismatch|指定した Attachment が別の Issue に属する場合にエラーとなること|
+|User Not Found|存在しない User による削除でエラーとなること|
+|Storage File Not Found|DB 情報は存在するが物理ファイルが存在しない場合、物理ファイルは既に削除済みとみなし、DB の Attachment 情報の削除を継続すること|
 
 ---
 
@@ -599,9 +620,13 @@ AI Draft は保存されず、ユーザーが確認・修正した後に Issue �
 |テスト項目|内容|
 |---|---|
 |Storage Save Failure|Local Storage への保存に失敗した場合、Attachment 情報が DB に登録されないこと|
-|Metadata Registration Failure|DB 登録に失敗した場合、保存済みファイルが Local Storage に残らないこと|
-|Storage Delete Failure|Local Storage の削除に失敗した場合、Attachment 情報の削除が完了扱いにならないこと|
-|No Partial State|処理失敗時にファイルまたは DB 情報だけが残らないこと|
+|Metadata Registration Failure|DB 登録または commit に失敗した場合、DB を rollback し、保存済みファイルを補償削除すること|
+|Upload Compensation Failure|DB 登録または commit 失敗後の補償削除にも失敗した場合、StorageError とし、元の DB 例外より補償削除の失敗を優先して外部へ報告すること。孤立ファイルが残る可能性を許容すること|
+|Delete Staging Failure|物理ファイルの `.trash/` への一時退避に失敗した場合、DB の Attachment 情報を削除しないこと|
+|Metadata Delete Failure|`.trash/` への一時退避後に DB 削除または commit が失敗した場合、DB を rollback し、物理ファイルを元の場所へ復元すること|
+|Delete Restore Failure|DB rollback 後の物理ファイル復元にも失敗した場合、元の DB 例外を優先し、残存状態をエラーとして扱うこと|
+|Trash Delete Failure|DB commit 成功後に `.trash/` の物理ファイル削除に失敗した場合、DB 削除は成功扱いとし、`.trash/` に孤立ファイルが残ることを許容すること|
+|Consistency|通常の単一障害では DB metadata と物理ファイルの整合性を維持し、補償処理自体も失敗する二重障害では最新 Detailed Design で定義された残存状態を許容すること|
 
 ---
 

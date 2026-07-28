@@ -18,6 +18,7 @@ class Settings:
 
     application_name: str = "Commissioning Issue Manager API"
     database_url: str = "sqlite:///./cim.db"
+    storage_root: str = "./storage"
     debug: bool = False
     ollama_host: str = "http://localhost:11434"
     ollama_model: str | None = None
@@ -30,6 +31,7 @@ class Settings:
         return cls(
             application_name=os.getenv("CIM_APPLICATION_NAME", defaults.application_name),
             database_url=os.getenv("CIM_DATABASE_URL", defaults.database_url),
+            storage_root=os.getenv("CIM_STORAGE_ROOT", defaults.storage_root),
             debug=_read_bool("CIM_DEBUG", defaults.debug),
             ollama_host=os.getenv("CIM_OLLAMA_HOST", defaults.ollama_host),
             ollama_model=os.getenv("CIM_OLLAMA_MODEL"),
