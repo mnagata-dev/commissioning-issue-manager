@@ -3,12 +3,13 @@
 import logging
 
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.middleware.sessions import SessionMiddleware
 
-from app.api.routes import auth_router
+from app.api.routes import auth_router, issues_router, projects_router
 from app.core.config import Settings, settings
-from app.core.exceptions import ApplicationError
+from app.core.exceptions import ApplicationError, ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +26,15 @@ async def application_error_handler(
         status_code=exception.status_code,
         content={"error": {"code": exception.code, "message": exception.message}},
     )
+
+
+async def request_validation_error_handler(
+    request: Request, exception: Exception
+) -> JSONResponse:
+    """Convert request validation failures to the common safe response."""
+    if not isinstance(exception, RequestValidationError):
+        raise TypeError("Expected RequestValidationError")
+    return await application_error_handler(request, ValidationError())
 
 
 def create_app(application_settings: Settings = settings) -> FastAPI:
@@ -46,7 +56,13 @@ def create_app(application_settings: Settings = settings) -> FastAPI:
         path="/",
     )
     application.add_exception_handler(ApplicationError, application_error_handler)
+    application.add_exception_handler(
+        RequestValidationError,
+        request_validation_error_handler,
+    )
     application.include_router(auth_router)
+    application.include_router(projects_router)
+    application.include_router(issues_router)
     return application
 
 

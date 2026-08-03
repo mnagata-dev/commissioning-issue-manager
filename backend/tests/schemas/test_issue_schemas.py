@@ -8,6 +8,7 @@ from app.schemas import (
     CommentResponse,
     CreateIssueRequest,
     IssueDetailResponse,
+    IssueListResponse,
     IssueSummaryResponse,
     UpdateIssueRequest,
     UpdateIssueStatusRequest,
@@ -105,6 +106,22 @@ def test_issue_summary_response_accepts_room_and_none() -> None:
     assert with_room.room is not None
     assert with_room.room.room_number == "1203"
     assert without_room.room is None
+
+
+def test_issue_list_response_contains_exact_pagination_shape() -> None:
+    response = IssueListResponse(items=[], page=1, page_size=20, total=0)
+
+    assert response.model_dump() == {
+        "items": [],
+        "page": 1,
+        "page_size": 20,
+        "total": 0,
+    }
+
+
+def test_issue_list_response_rejects_extra_fields() -> None:
+    with pytest.raises(ValidationError):
+        IssueListResponse(items=[], page=1, page_size=20, total=0, pages=0)
 
 
 def test_issue_detail_response_serializes_typed_lists_and_datetimes() -> None:
