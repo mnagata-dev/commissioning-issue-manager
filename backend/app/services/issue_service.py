@@ -19,6 +19,7 @@ from app.schemas import (
     CommentResponse,
     CreateIssueRequest,
     IssueDetailResponse,
+    IssueListResponse,
     IssueSummaryResponse,
     UpdateIssueRequest,
     UpdateIssueStatusRequest,
@@ -57,12 +58,14 @@ class IssueService:
         keyword: str | None,
         page: int,
         page_size: int,
-    ) -> list[IssueSummaryResponse]:
+    ) -> IssueListResponse:
         self._require_project(project_id)
         if page < 1:
             raise ValidationError("Page must be at least 1.")
         if page_size < 1:
             raise ValidationError("Page size must be at least 1.")
+        if page_size > 100:
+            raise ValidationError("Page size must be at most 100.")
         self._validate_optional_enum(status, Status, "Status")
         self._validate_optional_enum(category, Category, "Category")
         self._validate_optional_enum(target_type, TargetType, "Target type")
@@ -76,7 +79,19 @@ class IssueService:
             (page - 1) * page_size,
             page_size,
         )
-        return [self._to_summary(issue) for issue in issues]
+        total = self.issue_repository.count_by_project(
+            project_id,
+            status,
+            category,
+            target_type,
+            keyword,
+        )
+        return IssueListResponse(
+            items=[self._to_summary(issue) for issue in issues],
+            page=page,
+            page_size=page_size,
+            total=total,
+        )
 
     def get_issue_detail(self, issue_id: int) -> IssueDetailResponse:
         issue = self._require_issue(issue_id)

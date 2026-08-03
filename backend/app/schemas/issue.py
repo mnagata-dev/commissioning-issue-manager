@@ -52,6 +52,15 @@ class IssueSummaryResponse(BaseModel):
     updated_at: datetime
 
 
+class IssueListResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    items: list[IssueSummaryResponse]
+    page: int
+    page_size: int
+    total: int
+
+
 class IssueDetailResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

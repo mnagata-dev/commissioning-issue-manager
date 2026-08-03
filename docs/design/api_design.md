@@ -345,14 +345,14 @@ Issue 一覧は updated_at の降順（新しく更新された Issue を先頭�
 
 ### Query Parameters
 
-|Parameter|Required|説明|
-|---|---|---|
-|status|No|Status で絞り込み|
-|category|No|Category で絞り込み|
-|target_type|No|Target Type で絞り込み|
-|keyword|No|Description 検索|
-|page|No|ページ番号|
-|page_size|No|1ページあたりの件数|
+|Parameter|Required|Default|Validation|説明|
+|---|---|---|---|---|
+|status|No|-|定義済み Status|Status で絞り込み|
+|category|No|-|定義済み Category|Category で絞り込み|
+|target_type|No|-|`ROOM` または `OTHER`|Target Type で絞り込み|
+|keyword|No|-|-|Description 検索|
+|page|No|`1`|1以上|ページ番号|
+|page_size|No|`20`|1以上100以下|1ページあたりの件数|
 
 ### Response
 
@@ -383,8 +383,9 @@ Issue 一覧は updated_at の降順（新しく更新された Issue を先頭�
 
 |Status|内容|
 |---|---|
+|400|Query Parameter が不正|
 |401|未認証|
-|404|Projectが存在しない|
+|404|Project が存在しない|
 
 ---
 

@@ -58,24 +58,31 @@ def test_list_issues_returns_summaries_with_offset_and_unchanged_filters(
     service, repositories, domain_entities, session
 ) -> None:
     repositories["issue"].list_by_project.return_value = [domain_entities["issue"]]
+    repositories["issue"].count_by_project.return_value = 41
 
     result = service.list_issues(2, "OPEN", "LIGHTING", "ROOM", "lamp", 3, 20)
 
-    assert [item.id for item in result] == [6]
+    assert [item.id for item in result.items] == [6]
+    assert result.page == 3
+    assert result.page_size == 20
+    assert result.total == 41
     repositories["issue"].list_by_project.assert_called_once_with(
         2, "OPEN", "LIGHTING", "ROOM", "lamp", 40, 20
     )
-    repositories["issue"].count_by_project.assert_not_called()
+    repositories["issue"].count_by_project.assert_called_once_with(
+        2, "OPEN", "LIGHTING", "ROOM", "lamp"
+    )
     session.commit.assert_not_called()
 
 
-@pytest.mark.parametrize(("page", "page_size"), [(0, 1), (1, 0)])
-def test_list_issues_rejects_non_positive_pagination(
+@pytest.mark.parametrize(("page", "page_size"), [(0, 1), (1, 0), (1, 101)])
+def test_list_issues_rejects_out_of_range_pagination(
     service, repositories, page, page_size
 ) -> None:
     with pytest.raises(ValidationError):
         service.list_issues(2, None, None, None, None, page, page_size)
     repositories["issue"].list_by_project.assert_not_called()
+    repositories["issue"].count_by_project.assert_not_called()
 
 
 @pytest.mark.parametrize(

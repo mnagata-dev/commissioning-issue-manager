@@ -13,6 +13,7 @@ from app.schemas.common import (
 from app.schemas.issue import (
     CreateIssueRequest,
     IssueDetailResponse,
+    IssueListResponse,
     IssueSummaryResponse,
     UpdateIssueRequest,
     UpdateIssueStatusRequest,
@@ -29,6 +30,7 @@ __all__ = [
     "GenerateDraftResponse",
     "HotelReferenceResponse",
     "IssueDetailResponse",
+    "IssueListResponse",
     "IssueSummaryResponse",
     "LoginRequest",
     "ProjectListResponse",

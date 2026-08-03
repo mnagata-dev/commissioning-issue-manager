@@ -19,8 +19,8 @@ def test_module_app_is_fastapi() -> None:
     assert isinstance(app, FastAPI)
 
 
-def test_application_has_no_undefined_routes() -> None:
-    """Only the approved authentication API routes are registered."""
+def test_application_has_only_approved_routes() -> None:
+    """Only approved API routes are registered."""
     paths = set(app.openapi()["paths"])
     assert "/" not in paths
     assert "/health" not in paths
@@ -28,6 +28,10 @@ def test_application_has_no_undefined_routes() -> None:
         "/api/auth/login",
         "/api/auth/logout",
         "/api/auth/me",
+        "/api/projects",
+        "/api/projects/{project_id}/issues",
+        "/api/issues/{issue_id}",
+        "/api/issues/{issue_id}/status",
     }
 
 
@@ -50,3 +54,19 @@ def test_application_error_uses_common_response() -> None:
     assert response.json() == {
         "error": {"code": "VALIDATION_ERROR", "message": "Validation failed."}
     }
+
+
+def test_request_validation_error_uses_common_safe_response() -> None:
+    test_app = create_app()
+
+    @test_app.get("/_test/validation")
+    def require_integer(value: int) -> None:
+        del value
+
+    response = TestClient(test_app).get("/_test/validation", params={"value": "bad"})
+
+    assert response.status_code == 400
+    assert response.json() == {
+        "error": {"code": "VALIDATION_ERROR", "message": "Validation failed."}
+    }
+    assert "int_parsing" not in response.text

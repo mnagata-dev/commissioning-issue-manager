@@ -91,6 +91,19 @@ def test_login_failure_is_generic_and_does_not_create_session(
     assert "cim_session" not in client.cookies
 
 
+def test_login_request_validation_uses_common_bad_request_response(
+    client: TestClient,
+) -> None:
+    response = client.post("/api/auth/login", json={})
+
+    assert response.status_code == 400
+    assert response.json() == {
+        "error": {"code": "VALIDATION_ERROR", "message": "Validation failed."}
+    }
+    assert "detail" not in response.json()
+    assert "cim_session" not in client.cookies
+
+
 def test_me_without_session_returns_unauthorized(client: TestClient) -> None:
     response = client.get("/api/auth/me")
 

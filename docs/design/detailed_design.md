@@ -451,6 +451,7 @@ description: str
 ```
 
 ---
+
 ### UpdateIssueStatusRequest
 
 ```python
@@ -468,6 +469,17 @@ category: str
 description: str
 status: str
 updated_at: datetime
+```
+
+---
+
+### IssueListResponse
+
+```python
+items: list[IssueSummaryResponse]
+page: int
+page_size: int
+total: int
 ```
 
 ---
@@ -674,7 +686,7 @@ list_issues(
     keyword: str | None,
     page: int,
     page_size: int
-) -> list[IssueSummaryResponse]
+) -> IssueListResponse
 
 get_issue_detail(issue_id: int) -> IssueDetailResponse
 
@@ -704,6 +716,28 @@ Issue 新規登録時の初期 Status は `OPEN` とする。
 Model または Database の default には依存しない。
 
 API レスポンスの生成は API Router が担当する。
+
+`list_issues()` のページング仕様は以下とする。
+
+|項目|値|
+|---|---|
+|`page` の既定値|`1`|
+|`page_size` の既定値|`20`|
+|`page` の最小値|`1`|
+|`page_size` の最小値|`1`|
+|`page_size` の最大値|`100`|
+
+以下の場合は `ValidationError` とする。
+
+- `page < 1`
+- `page_size < 1`
+- `page_size > 100`
+
+`list_issues()` は、`page` と `page_size` から `offset` を計算し、`IssueRepository.list_by_project()` で対象ページを取得する。
+
+同一検索条件による総件数は `IssueRepository.count_by_project()` から取得し、`items`、`page`、`page_size` および `total` を持つ `IssueListResponse` を返す。
+
+API Router は Repository を直接呼び出さず、ページング情報を生成しない。
 
 ---
 
