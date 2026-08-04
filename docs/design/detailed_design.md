@@ -202,9 +202,61 @@ backend/
 
 ---
 
-# 6. Layer Responsibilities
+# 6. Frontend Architecture
 
-## 6.1 API Router
+## 6.1 Frontend Directory Structure
+
+Frontend はリポジトリ直下の `frontend/` に配置する。
+
+初期構成を以下に示す。
+
+```text
+frontend/
+├── index.html
+├── projects.html
+├── css/
+│   └── style.css
+└── js/
+    ├── api.js
+    ├── auth.js
+    ├── login.js
+    └── projects.js
+```
+
+Frontend は HTML、CSS および JavaScript で構成する。
+
+React、TypeScript、npm および build tool は初期版では使用しない。
+
+## 6.2 Frontend Delivery
+
+Frontend は既存の FastAPI アプリケーションから配信する。
+
+Frontend と Backend は同一 Origin とする。
+
+画面および静的ファイルの配信先を以下に示す。
+
+|URL|配信対象|
+|---|---|
+|`/`|`frontend/index.html`|
+|`/projects.html`|`frontend/projects.html`|
+|`/css/*`|`frontend/css/*`|
+|`/js/*`|`frontend/js/*`|
+
+HTML は `FileResponse` を使用して返却する。
+
+CSS および JavaScript は FastAPI の `StaticFiles` を使用して配信する。
+
+Frontend の画面ルートは OpenAPI Schema に含めない。
+
+既存の `/api/*` REST API のパスおよび動作は変更しない。
+
+別の Frontend Server、npm development server または reverse proxy は初期版では導入しない。
+
+---
+
+# 7. Layer Responsibilities
+
+## 7.1 API Router
 
 API Router は HTTP リクエストを受け取り、Service を呼び出す。
 
@@ -220,7 +272,7 @@ API Router は業務ロジックを持たない。
 
 ---
 
-## 6.2 Service Layer
+## 7.2 Service Layer
 
 Service Layer は業務ロジックを担当する。
 
@@ -237,7 +289,7 @@ Service Layer は業務ロジックを担当する。
 
 ---
 
-## 6.3 Repository Layer
+## 7.3 Repository Layer
 
 Repository Layer はデータアクセスを担当する。
 
@@ -253,13 +305,13 @@ Repository は業務ロジックを持たない。
 
 ---
 
-## 6.4 Models
+## 7.4 Models
 
 Models は DB テーブルに対応する SQLAlchemy モデルを定義する。
 
 ---
 
-## 6.5 Schemas
+## 7.5 Schemas
 
 Schemas は Pydantic を利用した DTO を定義する。
 
@@ -271,7 +323,7 @@ Schemas は Pydantic を利用した DTO を定義する。
 
 ---
 
-## 6.6 Core
+## 7.6 Core
 
 Core にはアプリケーション全体で利用する共通機能を配置する。
 
@@ -284,7 +336,7 @@ Core にはアプリケーション全体で利用する共通機能を配置す
 
 ---
 
-# 7. Domain Models
+# 8. Domain Models
 
 本章では、システムで利用するドメインモデルを定義する。
 
@@ -294,7 +346,7 @@ Core にはアプリケーション全体で利用する共通機能を配置す
 
 ---
 
-## 7.1 Domain Model Overview
+## 8.1 Domain Model Overview
 
 本システムで扱う主要なドメインモデルを以下に示す。
 
@@ -311,7 +363,7 @@ Core にはアプリケーション全体で利用する共通機能を配置す
 
 ---
 
-## 7.2 Aggregate
+## 8.2 Aggregate
 
 本システムでは Issue を Aggregate Root とする。
 
@@ -327,7 +379,7 @@ Comment および Attachment は必ず Issue に属する。
 
 ---
 
-## 7.3 Domain Responsibilities
+## 8.3 Domain Responsibilities
 
 |Domain|主な責務|
 |---|---|
@@ -342,7 +394,7 @@ Comment および Attachment は必ず Issue に属する。
 
 ---
 
-## 7.4 ORM Mapping Policy
+## 8.4 ORM Mapping Policy
 
 SQLAlchemy Model は SQLAlchemy 2.x の型付き ORM を使用する。
 
@@ -358,7 +410,7 @@ Issue の `created_by` と `updated_by` のように同一テーブルを複数�
 
 ---
 
-## 7.5 Timestamp Policy
+## 8.5 Timestamp Policy
 
 Timestamp は UTC で管理する。
 
@@ -376,7 +428,7 @@ DB の `server_default` および ORM Event による自動更新は使用しな
 
 ---
 
-# 8. DTO Design
+# 9. DTO Design
 
 本章では、API で利用する DTO (Data Transfer Object) を定義する。
 
@@ -384,7 +436,7 @@ DTO は Pydantic Model として実装する。
 
 ---
 
-## 8.1 Authentication DTO
+## 9.1 Authentication DTO
 
 ### LoginRequest
 
@@ -406,7 +458,7 @@ role: str
 
 ---
 
-## 8.2 Project DTO
+## 9.2 Project DTO
 
 ### ProjectResponse
 
@@ -426,7 +478,7 @@ projects: list[ProjectResponse]
 
 ---
 
-## 8.3 Issue DTO
+## 9.3 Issue DTO
 
 ### CreateIssueRequest
 
@@ -506,7 +558,7 @@ attachments: list[AttachmentResponse]
 
 ---
 
-## 8.4 AI DTO
+## 9.4 AI DTO
 
 ### GenerateDraftRequest
 
@@ -529,7 +581,7 @@ description: str
 
 ---
 
-## 8.5 Comment DTO
+## 9.5 Comment DTO
 
 ### CreateCommentRequest
 
@@ -550,7 +602,7 @@ created_at: datetime
 
 ---
 
-## 8.6 Attachment DTO
+## 9.6 Attachment DTO
 
 ### AttachmentResponse
 
@@ -574,7 +626,7 @@ message: str
 
 ---
 
-## 8.7 DTO Design Policy
+## 9.7 DTO Design Policy
 
 DTO 設計では以下の方針を採用する。
 
@@ -586,7 +638,7 @@ DTO 設計では以下の方針を採用する。
 
 ---
 
-# 9. Service Design
+# 10. Service Design
 
 本章では、Service Layer の設計を定義する。
 
@@ -594,7 +646,7 @@ Service Layer は業務ロジックを担当し、API RouterとRepository Layer 
 
 ---
 
-## 9.1 Service List
+## 10.1 Service List
 
 |Service|責務|
 |---|---|
@@ -608,7 +660,7 @@ Service Layer は業務ロジックを担当し、API RouterとRepository Layer 
 
 ---
 
-## 9.2 AuthService
+## 10.2 AuthService
 
 ### Responsibilities
 
@@ -643,7 +695,7 @@ Login 成功後の Session 作成および Logout 時の Session 削除は API L
 
 ---
 
-## 9.3 ProjectService
+## 10.3 ProjectService
 
 ### Responsibilities
 
@@ -660,7 +712,7 @@ validate_project_exists(project_id: int) -> None
 
 ---
 
-## 9.4 IssueService
+## 10.4 IssueService
 
 ### Responsibilities
 
@@ -741,7 +793,7 @@ API Router は Repository を直接呼び出さず、ページング情報を生
 
 ---
 
-## 9.5 AIService
+## 10.5 AIService
 
 ### Responsibilities
 
@@ -784,7 +836,7 @@ AIService は SQLAlchemy Session を保持せず、commit および rollback を
 
 ---
 
-## 9.6 CommentService
+## 10.6 CommentService
 
 ### Responsibilities
 
@@ -822,7 +874,7 @@ Comment は編集・削除しない。
 
 ---
 
-## 9.7 AttachmentService
+## 10.7 AttachmentService
 
 ### Responsibilities
 
@@ -914,7 +966,7 @@ Repository は commit および rollback を行わない。
 
 ---
 
-## 9.8 StorageService
+## 10.8 StorageService
 
 ### Responsibilities
 
@@ -978,7 +1030,7 @@ class StoredFile:
 
 ---
 
-# 10. Repository Design
+# 11. Repository Design
 
 本章では、Repository Layer の設計を定義する。
 
@@ -986,7 +1038,7 @@ Repository はデータアクセスのみを担当し、業務ロジックを持
 
 ---
 
-## 10.1 Repository List
+## 11.1 Repository List
 
 初期版では、Hotel は Project とともに取得するため、専用の HotelRepository は定義しない。
 
@@ -1001,7 +1053,7 @@ Repository はデータアクセスのみを担当し、業務ロジックを持
 
 ---
 
-## 10.2 UserRepository
+## 11.2 UserRepository
 
 ```python
 find_by_id(user_id: int) -> User | None
@@ -1011,7 +1063,7 @@ find_by_username(username: str) -> User | None
 
 ---
 
-## 10.3 ProjectRepository
+## 11.3 ProjectRepository
 
 ```python
 find_by_id(project_id: int) -> Project | None
@@ -1021,7 +1073,7 @@ list_all() -> list[Project]
 
 ---
 
-## 10.4 RoomRepository
+## 11.4 RoomRepository
 
 ```python
 find_by_id(room_id: int) -> Room | None
@@ -1040,7 +1092,7 @@ list_by_hotel(hotel_id: int) -> list[Room]
 
 ---
 
-## 10.5 IssueRepository
+## 11.5 IssueRepository
 
 Repository は永続化した Entity を返却する。
 
@@ -1074,7 +1126,7 @@ update(issue: Issue) -> Issue
 
 ---
 
-## 10.6 CommentRepository
+## 11.6 CommentRepository
 
 ```python
 list_by_issue(issue_id: int) -> list[Comment]
@@ -1084,7 +1136,7 @@ create(comment: Comment) -> Comment
 
 ---
 
-## 10.7 AttachmentRepository
+## 11.7 AttachmentRepository
 
 ```python
 find_by_id(attachment_id: int) -> Attachment | None
@@ -1098,13 +1150,13 @@ delete(attachment: Attachment) -> None
 
 ---
 
-# 11. Validation Design
+# 12. Validation Design
 
 本章では、Service Layer で実施する Validation を定義する。
 
 ---
 
-## 11.1 Common Validation
+## 12.1 Common Validation
 
 入力値の型や必須項目の検証は Pydantic により実施する。
 
@@ -1119,7 +1171,7 @@ Service Layer では、DB の存在確認や業務ルールなど、Pydantic で
 
 ---
 
-## 11.2 Issue Validation
+## 12.2 Issue Validation
 
 Issue 登録・更新時には以下を検証する。
 
@@ -1135,7 +1187,7 @@ Issue 登録・更新時には以下を検証する。
 
 ---
 
-## 11.3 Target Type Validation
+## 12.3 Target Type Validation
 
 Target Type は以下を許可する。
 
@@ -1157,7 +1209,7 @@ Target Type と `room_id` および `target` の組み合わせを検証する�
 
 ---
 
-## 11.4 Category Validation
+## 12.4 Category Validation
 
 Category は以下を許可する。
 
@@ -1176,7 +1228,7 @@ OTHER
 
 ---
 
-## 11.5 Status Validation
+## 12.5 Status Validation
 
 Status は以下を許可する。
 
@@ -1189,7 +1241,7 @@ CLOSED
 
 ---
 
-## 11.6 Attachment Validation
+## 12.6 Attachment Validation
 
 Attachment 追加時には以下を検証する。
 
@@ -1202,7 +1254,7 @@ Attachment 追加時には以下を検証する。
 
 ---
 
-## 11.7 Comment Validation
+## 12.7 Comment Validation
 
 Comment 追加時には以下を検証する。
 
@@ -1213,13 +1265,13 @@ Comment 追加時には以下を検証する。
 
 ---
 
-# 12. Error Handling Design
+# 13. Error Handling Design
 
 本章では、Backend で利用するエラー処理方針を定義する。
 
 ---
 
-## 12.1 Custom Exceptions
+## 13.1 Custom Exceptions
 
 以下の共通例外を定義する。
 
@@ -1235,7 +1287,7 @@ Comment 追加時には以下を検証する。
 
 ---
 
-## 12.2 Error Mapping
+## 13.2 Error Mapping
 
 |Exception|HTTP Status|
 |---|---|
@@ -1249,7 +1301,7 @@ Comment 追加時には以下を検証する。
 
 ---
 
-## 12.3 Error Response
+## 13.3 Error Response
 
 API では共通エラーレスポンス形式を返す。
 
@@ -1264,7 +1316,7 @@ API では共通エラーレスポンス形式を返す。
 
 ---
 
-## 12.4 Error Message Policy
+## 13.4 Error Message Policy
 
 - ユーザーに理解できるメッセージを返す。
 - システム内部情報を返さない。
@@ -1272,13 +1324,13 @@ API では共通エラーレスポンス形式を返す。
 
 ---
 
-# 13. Authentication and Authorization Design
+# 14. Authentication and Authorization Design
 
 本章では、認証および認可の詳細設計を定義する。
 
 ---
 
-## 13.1 Authentication Policy
+## 14.1 Authentication Policy
 
 認証済み User のみ API を利用できる。
 
@@ -1314,7 +1366,7 @@ JWT、Bearer Token、Refresh Token および Server-side Session Database は初
 
 ---
 
-## 13.2 Session Configuration
+## 14.2 Session Configuration
 
 Session Cookie の設定を以下とする。
 
@@ -1348,7 +1400,7 @@ Session 有効期間は8時間とする。
 
 ---
 
-## 13.3 User Roles
+## 14.3 User Roles
 
 初期版では以下の Role を定義する。
 
@@ -1359,7 +1411,7 @@ ENGINEER
 
 ---
 
-## 13.4 Authorization Policy
+## 14.4 Authorization Policy
 
 Role に応じて利用可能な機能を制御する。
 
@@ -1374,7 +1426,7 @@ Role に応じて利用可能な機能を制御する。
 
 ---
 
-## 13.5 API Dependency
+## 14.5 API Dependency
 
 FastAPI の Dependency で認証済み User を取得する。
 
@@ -1410,7 +1462,7 @@ require_administrator(
 
 ---
 
-## 13.6 Authentication API Session Flow
+## 14.6 Authentication API Session Flow
 
 ### Login
 
@@ -1451,7 +1503,7 @@ Logout 成功後、それまで使用していた Session では認証済み API
 
 ---
 
-## 13.7 CSRF Policy
+## 14.7 CSRF Policy
 
 初期版では Frontend と Backend を同一 Origin で提供する。
 
@@ -1467,13 +1519,35 @@ CORS で任意の Origin を許可しない。
 
 ---
 
-# 14. AI Service Design
+## 14.8 Selected Project Management
+
+選択中の Project はブラウザセッション単位で管理する。
+
+Frontend は選択した Project の識別情報を `sessionStorage` に保存する。
+
+Issue List、Issue Detail、Issue Create および Issue Edit は、`sessionStorage` に保存された Project の識別情報を利用する。
+
+Project が選択されていない場合は、Project Selection 画面へ遷移する。
+
+ログアウト時は `sessionStorage` に保存した Project の識別情報を削除する。
+
+---
+
+## 14.9 Authentication Failure Handling
+
+認証が必要な API で `401 Unauthorized` が返却された場合、Frontend は Login 画面へ遷移する。
+
+Session が無効となった場合も同様とする。
+
+---
+
+# 15. AI Service Design
 
 本章では、AI Draft 生成機能の詳細設計を定義する。
 
 ---
 
-## 14.1 AI Service Responsibility
+## 15.1 AI Service Responsibility
 
 AIService は Ollama を呼び出し、Issue Draft を生成する。
 
@@ -1485,7 +1559,7 @@ AIService は業務データを保存しない。
 
 ---
 
-## 14.2 AI Draft Input
+## 15.2 AI Draft Input
 
 AI Draft 生成時には以下を入力とする。
 
@@ -1499,7 +1573,7 @@ AI Draft 生成時には以下を入力とする。
 
 ---
 
-## 14.3 AI Draft Output
+## 15.3 AI Draft Output
 
 AI Draft は以下を返却する。
 
@@ -1510,7 +1584,7 @@ AI Draft は以下を返却する。
 
 ---
 
-## 14.4 AI Prompt Policy
+## 15.4 AI Prompt Policy
 
 Ollama への Prompt は System Message と User Message に分離する。
 
@@ -1538,7 +1612,7 @@ Target Type、Room および Target は Description 生成の文脈としての�
 
 ---
 
-## 14.5 AI Error Handling
+## 15.5 AI Error Handling
 
 以下の場合は `AIServiceError` とする。
 
@@ -1562,7 +1636,7 @@ AI 処理に失敗しても、ユーザーが手入力で Issue を登録でき�
 
 ---
 
-## 14.6 Ollama Integration
+## 15.6 Ollama Integration
 
 Ollama との通信には公式 `ollama` Python Client を使用する。
 
@@ -1607,13 +1681,13 @@ Ollama が返した Message Content は Pydantic で検証してから `Generate
 
 ---
 
-# 15. File Storage Design
+# 16. File Storage Design
 
 本章では、添付ファイル保存の詳細設計を定義する。
 
 ---
 
-## 15.1 Storage Policy
+## 16.1 Storage Policy
 
 添付ファイル本体は Local Storage へ保存する。
 
@@ -1621,7 +1695,7 @@ DB には添付ファイルのメタデータのみ保存する。
 
 ---
 
-## 15.2 Storage Directory
+## 16.2 Storage Directory
 
 Local Storage Root は `app/core/config.py` で管理する。
 
@@ -1649,7 +1723,7 @@ DB には Storage Root を含まない相対パスのみ保存する。
 
 ---
 
-## 15.3 File Path Policy
+## 16.3 File Path Policy
 
 DB に保存する `file_path` は Storage Root からの相対パスとする。
 
@@ -1673,7 +1747,7 @@ Client から受け取ったファイル名を保存パスとして直接使用�
 
 ---
 
-## 15.4 File Name Policy
+## 16.4 File Name Policy
 
 保存用ファイル名は UUID v4 と元ファイルの許可済み拡張子を組み合わせて生成する。
 
@@ -1709,7 +1783,7 @@ UUID v4 により、同名ファイルおよび同時アップロード時の衝
 
 ---
 
-## 15.5 File Type Policy
+## 16.5 File Type Policy
 
 初期版で保存を許可するファイル形式は以下とする。
 
@@ -1744,7 +1818,7 @@ MIME Type はアップロード時に受け取った値を使用し、許可済�
 
 ---
 
-## 15.6 File Size Policy
+## 16.6 File Size Policy
 
 ファイルサイズ制限を以下とする。
 
@@ -1763,7 +1837,7 @@ MIME Type はアップロード時に受け取った値を使用し、許可済�
 
 ---
 
-## 15.7 File Delete Policy
+## 16.7 File Delete Policy
 
 Attachment 削除時には以下を実施する。
 
@@ -1788,7 +1862,7 @@ DB commit 後の `.trash/` 完全削除に失敗した場合は `StorageError` �
 
 ---
 
-## 15.8 Upload Compensation Policy
+## 16.8 Upload Compensation Policy
 
 Attachment Upload では以下の順序で処理する。
 
@@ -1813,7 +1887,7 @@ DB Transaction は rollback された状態を維持する。
 
 ---
 
-# 16. Future Enhancements
+# 17. Future Enhancements
 
 将来的な拡張を以下に示す。
 

@@ -50,8 +50,8 @@ CIMはこれらの課題を解決し、現場でのIssue管理をシンプルか
 
 ## Frontend
 
-* React
-* TypeScript
+* HTML
+* JavaScript
 
 ## AI
 

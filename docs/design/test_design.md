@@ -455,6 +455,8 @@ FastAPI TestClient を利用する。
 |テスト項目|内容|
 |---|---|
 |Login Success|正しいログイン ID (ユーザー名またはメールアドレス形式) とパスワードでログインできること|
+|Login Success Navigation|ログイン成功後に Project Selection 画面へ遷移すること|
+|Authenticated User Navigation|認証済みユーザーが Login 画面を表示した場合、Project Selection 画面へ遷移すること|
 |Login Failure|誤ったログイン ID またはパスワードでログインできないこと|
 |Required Fields|必須項目が未入力の場合、エラーが表示されること|
 
@@ -466,6 +468,10 @@ FastAPI TestClient を利用する。
 |---|---|
 |Project List|Project 一覧が表示されること|
 |Select Project|Project 選択後に Issue List へ遷移すること|
+|Selected Project Storage|選択した Project の識別情報が `sessionStorage` に保存されること|
+|Selected Project Retention|選択した Project が同一ブラウザセッション中の画面遷移で維持されること|
+|Unauthenticated Access|未認証または Session 期限切れの場合、Login 画面へ遷移すること|
+|Logout|Logout 後に `sessionStorage` に保存した Project の識別情報が削除されること|
 
 ---
 
@@ -477,6 +483,8 @@ FastAPI TestClient を利用する。
 |Search|検索条件で絞り込みできること|
 |Open Detail|Issue Detail へ遷移すること|
 |New Issue|Issue Create へ遷移すること|
+|No Selected Project|Project が選択されていない場合、Project Selection 画面へ遷移すること|
+|Authentication Failure|認証が必要な API から `401 Unauthorized` が返却された場合、Login 画面へ遷移すること|
 
 ---
 
