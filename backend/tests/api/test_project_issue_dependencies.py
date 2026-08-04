@@ -1,13 +1,15 @@
 """Project and Issue service dependency tests."""
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from app.api.deps import (
+    get_ai_service,
     get_attachment_service,
     get_comment_service,
     get_issue_service,
     get_project_service,
 )
+from app.clients import OllamaClient
 from app.repositories import (
     AttachmentRepository,
     CommentRepository,
@@ -17,6 +19,22 @@ from app.repositories import (
     UserRepository,
 )
 from app.services import StorageService
+
+
+def test_get_ai_service_constructs_required_dependencies() -> None:
+    session = MagicMock()
+    provider = MagicMock()
+
+    with patch("app.clients.ollama_client.Client", return_value=provider):
+        service = get_ai_service(session)
+
+    assert isinstance(service.project_repository, ProjectRepository)
+    assert isinstance(service.room_repository, RoomRepository)
+    assert isinstance(service.ollama_client, OllamaClient)
+    assert service.project_repository.session is session
+    assert service.room_repository.session is session
+    session.assert_not_called()
+    provider.chat.assert_not_called()
 
 
 def test_get_project_service_uses_request_session() -> None:

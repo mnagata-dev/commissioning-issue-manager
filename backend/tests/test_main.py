@@ -28,6 +28,7 @@ def test_application_has_only_approved_routes() -> None:
         "/api/auth/login",
         "/api/auth/logout",
         "/api/auth/me",
+        "/api/ai/issue-draft",
         "/api/projects",
         "/api/projects/{project_id}/issues",
         "/api/issues/{issue_id}",
@@ -37,6 +38,12 @@ def test_application_has_only_approved_routes() -> None:
         "/api/attachments/{attachment_id}",
         "/api/issues/{issue_id}/status",
     }
+
+
+def test_ai_draft_route_has_only_post_without_duplicates() -> None:
+    paths = app.openapi()["paths"]
+
+    assert set(paths["/api/ai/issue-draft"]) == {"post"}
 
 
 def test_attachment_routes_have_only_approved_methods_without_duplicates() -> None:
