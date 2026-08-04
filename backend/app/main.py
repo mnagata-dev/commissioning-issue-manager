@@ -7,7 +7,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.middleware.sessions import SessionMiddleware
 
-from app.api.routes import auth_router, issues_router, projects_router
+from app.api.routes import auth_router, comments_router, issues_router, projects_router
 from app.core.config import Settings, settings
 from app.core.exceptions import ApplicationError, ValidationError
 
@@ -63,6 +63,7 @@ def create_app(application_settings: Settings = settings) -> FastAPI:
     application.include_router(auth_router)
     application.include_router(projects_router)
     application.include_router(issues_router)
+    application.include_router(comments_router)
     return application
 
 

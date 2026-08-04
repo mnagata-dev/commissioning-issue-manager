@@ -17,7 +17,7 @@ from app.repositories import (
     UserRepository,
 )
 from app.schemas import CurrentUserResponse
-from app.services import AuthService, IssueService, ProjectService
+from app.services import AuthService, CommentService, IssueService, ProjectService
 
 DatabaseSession = Annotated[Session, Depends(get_db_session)]
 
@@ -54,6 +54,19 @@ def get_issue_service(session: DatabaseSession) -> IssueService:
 IssueServiceDependency = Annotated[IssueService, Depends(get_issue_service)]
 
 
+def get_comment_service(session: DatabaseSession) -> CommentService:
+    """Construct the comment service for the current request."""
+    return CommentService(
+        session,
+        IssueRepository(session),
+        UserRepository(session),
+        CommentRepository(session),
+    )
+
+
+CommentServiceDependency = Annotated[CommentService, Depends(get_comment_service)]
+
+
 def get_current_user(
     request: Request,
     auth_service: AuthServiceDependency,
@@ -79,6 +92,7 @@ def require_administrator(
 
 __all__ = [
     "get_auth_service",
+    "get_comment_service",
     "get_current_user",
     "get_db_session",
     "get_issue_service",
