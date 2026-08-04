@@ -32,7 +32,20 @@ def test_application_has_only_approved_routes() -> None:
         "/api/projects/{project_id}/issues",
         "/api/issues/{issue_id}",
         "/api/issues/{issue_id}/comments",
+        "/api/issues/{issue_id}/attachments",
+        "/api/issues/{issue_id}/attachments/{attachment_id}",
+        "/api/attachments/{attachment_id}",
         "/api/issues/{issue_id}/status",
+    }
+
+
+def test_attachment_routes_have_only_approved_methods_without_duplicates() -> None:
+    paths = app.openapi()["paths"]
+
+    assert set(paths["/api/issues/{issue_id}/attachments"]) == {"get", "post"}
+    assert set(paths["/api/attachments/{attachment_id}"]) == {"get"}
+    assert set(paths["/api/issues/{issue_id}/attachments/{attachment_id}"]) == {
+        "delete"
     }
 
 

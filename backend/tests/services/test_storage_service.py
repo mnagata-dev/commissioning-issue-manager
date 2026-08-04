@@ -59,6 +59,84 @@ def test_delete_file_only_deletes_target(tmp_path: Path) -> None:
     assert (tmp_path / second.file_path).exists()
 
 
+def test_resolve_file_returns_regular_file_below_root(tmp_path: Path) -> None:
+    target = tmp_path / "attachments/issues/1/photo.jpg"
+    target.parent.mkdir(parents=True)
+    target.write_bytes(b"content")
+
+    result = StorageService(tmp_path).resolve_file(
+        "attachments/issues/1/photo.jpg"
+    )
+
+    assert result == target.resolve()
+    assert result.is_relative_to(tmp_path.resolve())
+
+
+def test_resolve_file_does_not_open_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    target = tmp_path / "photo.jpg"
+    target.write_bytes(b"content")
+
+    def fail_open(*args, **kwargs):
+        raise AssertionError("resolve_file must not open the file")
+
+    monkeypatch.setattr(Path, "open", fail_open)
+    assert StorageService(tmp_path).resolve_file("photo.jpg") == target.resolve()
+
+
+def test_resolve_file_returns_none_for_missing_target(tmp_path: Path) -> None:
+    assert StorageService(tmp_path).resolve_file("missing.jpg") is None
+
+
+@pytest.mark.parametrize(
+    "file_path",
+    ["../outside.jpg", "/tmp/outside.jpg", "attachments/../../outside.jpg"],
+)
+def test_resolve_file_rejects_paths_outside_root(
+    tmp_path: Path, file_path: str
+) -> None:
+    with pytest.raises(StorageError):
+        StorageService(tmp_path).resolve_file(file_path)
+
+
+def test_resolve_file_rejects_directory(tmp_path: Path) -> None:
+    (tmp_path / "directory").mkdir()
+    with pytest.raises(StorageError):
+        StorageService(tmp_path).resolve_file("directory")
+
+
+def test_resolve_file_rejects_symlink_escape(tmp_path: Path) -> None:
+    outside = tmp_path.parent / f"{tmp_path.name}-outside.jpg"
+    outside.write_bytes(b"outside")
+    link = tmp_path / "link.jpg"
+    try:
+        link.symlink_to(outside)
+    except (NotImplementedError, OSError):
+        pytest.skip("Symbolic links are not supported")
+
+    with pytest.raises(StorageError):
+        StorageService(tmp_path).resolve_file("link.jpg")
+
+
+def test_resolve_file_converts_filesystem_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    target = tmp_path / "photo.jpg"
+    target.write_bytes(b"content")
+    original_stat = Path.stat
+
+    def fail_target_stat(path, *args, **kwargs):
+        if path == target.resolve():
+            raise OSError("private operating system detail")
+        return original_stat(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "stat", fail_target_stat)
+    with pytest.raises(StorageError) as error:
+        StorageService(tmp_path).resolve_file("photo.jpg")
+    assert str(error.value) == "The storage operation failed."
+
+
 def test_stage_restore_and_purge(tmp_path: Path) -> None:
     service = StorageService(tmp_path)
     stored = service.save_file(1, upload("one.mov", "video/quicktime", b"video"))

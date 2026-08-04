@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from pathlib import Path
+import stat
 from uuid import uuid4
 
 from fastapi import UploadFile
@@ -68,6 +69,25 @@ class StorageService:
             path.unlink(missing_ok=True)
         except OSError as error:
             raise StorageError() from error
+
+    def resolve_file(self, file_path: str) -> Path | None:
+        try:
+            relative_path = Path(file_path)
+            if relative_path.is_absolute():
+                raise StorageError()
+            resolved = (self.storage_root / relative_path).resolve()
+            if not resolved.is_relative_to(self.storage_root):
+                raise StorageError()
+            file_stat = resolved.stat()
+        except FileNotFoundError:
+            return None
+        except StorageError:
+            raise
+        except (OSError, RuntimeError, ValueError) as error:
+            raise StorageError() from error
+        if not stat.S_ISREG(file_stat.st_mode):
+            raise StorageError()
+        return resolved
 
     def stage_file(self, file_path: str) -> _StagedFile | None:
         source = self._resolve_relative(file_path)

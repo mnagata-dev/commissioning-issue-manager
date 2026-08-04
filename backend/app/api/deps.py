@@ -5,6 +5,7 @@ from typing import Annotated
 from fastapi import Depends, Request
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.exceptions import AuthenticationError, AuthorizationError
 from app.db.session import get_db_session
 from app.models.enums import Role
@@ -17,7 +18,14 @@ from app.repositories import (
     UserRepository,
 )
 from app.schemas import CurrentUserResponse
-from app.services import AuthService, CommentService, IssueService, ProjectService
+from app.services import (
+    AttachmentService,
+    AuthService,
+    CommentService,
+    IssueService,
+    ProjectService,
+    StorageService,
+)
 
 DatabaseSession = Annotated[Session, Depends(get_db_session)]
 
@@ -67,6 +75,22 @@ def get_comment_service(session: DatabaseSession) -> CommentService:
 CommentServiceDependency = Annotated[CommentService, Depends(get_comment_service)]
 
 
+def get_attachment_service(session: DatabaseSession) -> AttachmentService:
+    """Construct the attachment service for the current request."""
+    return AttachmentService(
+        session,
+        IssueRepository(session),
+        UserRepository(session),
+        AttachmentRepository(session),
+        StorageService(settings.storage_root),
+    )
+
+
+AttachmentServiceDependency = Annotated[
+    AttachmentService, Depends(get_attachment_service)
+]
+
+
 def get_current_user(
     request: Request,
     auth_service: AuthServiceDependency,
@@ -92,6 +116,7 @@ def require_administrator(
 
 __all__ = [
     "get_auth_service",
+    "get_attachment_service",
     "get_comment_service",
     "get_current_user",
     "get_db_session",

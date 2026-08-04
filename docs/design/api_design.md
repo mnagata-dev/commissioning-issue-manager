@@ -104,6 +104,8 @@
 |AI|POST|/api/ai/issue-draft|AI Draft生成|
 |Comment|POST|/api/issues/{issue_id}/comments|Comment 追加|
 |Attachment|POST|/api/issues/{issue_id}/attachments|Attachment 追加|
+|Attachment|GET|/api/issues/{issue_id}/attachments|Attachment 一覧取得|
+|Attachment|GET|/api/attachments/{attachment_id}|Attachment ダウンロード|
 |Attachment|DELETE|/api/issues/{issue_id}/attachments/{attachment_id}|Attachment 削除|
 
 ---
@@ -873,18 +875,35 @@ GET /api/attachments/{attachment_id}
 
 ### Description
 
-添付ファイルを取得する。
+指定された Attachment のファイル本体を返却する。
 
-### Response
+Attachment メタデータが存在しない場合、または対応する物理ファイルが Local Storage に存在しない場合は `404 Not Found` を返す。
 
-添付ファイル本体を返却する。
+### Response Headers
+
+|Header|値|
+|---|---|
+|`Content-Type`|Attachment メタデータの `mime_type`|
+|`Content-Disposition`|`inline`|
+|Filename|Attachment メタデータの `original_file_name`|
+
+`Content-Disposition` のファイル名には、Local Storage 上の保存名である `file_name` ではなく、アップロード時の元ファイル名である `original_file_name` を使用する。
+
+ファイル名を含む `Content-Disposition` Header は、Starlette の `FileResponse` 等を利用して安全に生成する。Header文字列を手動で組み立てない。
+
+### Response Body
+
+Attachment の物理ファイル本体を返却する。
+
+画像および動画は、ブラウザで表示可能な場合にインライン表示できるレスポンスとする。
 
 ### Error
 
 |Status|内容|
 |---|---|
 |401|未認証|
-|404|Attachment が存在しない|
+|404|Attachment または物理ファイルが存在しない|
+|500|ファイル取得処理に失敗|
 
 ---
 

@@ -2,7 +2,12 @@
 
 from unittest.mock import MagicMock
 
-from app.api.deps import get_comment_service, get_issue_service, get_project_service
+from app.api.deps import (
+    get_attachment_service,
+    get_comment_service,
+    get_issue_service,
+    get_project_service,
+)
 from app.repositories import (
     AttachmentRepository,
     CommentRepository,
@@ -11,6 +16,7 @@ from app.repositories import (
     RoomRepository,
     UserRepository,
 )
+from app.services import StorageService
 
 
 def test_get_project_service_uses_request_session() -> None:
@@ -64,6 +70,27 @@ def test_get_comment_service_constructs_required_repositories() -> None:
             service.issue_repository,
             service.user_repository,
             service.comment_repository,
+        )
+    )
+    session.assert_not_called()
+
+
+def test_get_attachment_service_constructs_required_dependencies() -> None:
+    session = MagicMock()
+
+    service = get_attachment_service(session)
+
+    assert service.session is session
+    assert isinstance(service.issue_repository, IssueRepository)
+    assert isinstance(service.user_repository, UserRepository)
+    assert isinstance(service.attachment_repository, AttachmentRepository)
+    assert isinstance(service.storage_service, StorageService)
+    assert all(
+        repository.session is session
+        for repository in (
+            service.issue_repository,
+            service.user_repository,
+            service.attachment_repository,
         )
     )
     session.assert_not_called()
