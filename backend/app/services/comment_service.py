@@ -5,9 +5,9 @@ from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import NotFoundError, ValidationError
-from app.models import Comment
+from app.models import Comment, Issue, User
 from app.repositories import CommentRepository, IssueRepository, UserRepository
-from app.schemas import CreateCommentRequest
+from app.schemas import CommentResponse, CreateCommentRequest
 
 
 class CommentService:
@@ -27,12 +27,8 @@ class CommentService:
         self, issue_id: int, request: CreateCommentRequest, user_id: int
     ) -> int:
         try:
-            issue = self.issue_repository.find_by_id(issue_id)
-            if issue is None:
-                raise NotFoundError("Issue not found.")
-            user = self.user_repository.find_by_id(user_id)
-            if user is None:
-                raise NotFoundError("User not found.")
+            issue = self._require_issue(issue_id)
+            user = self._require_user(user_id)
             if request.comment == "":
                 raise ValidationError("Comment must not be empty.")
             comment = Comment(
@@ -47,3 +43,31 @@ class CommentService:
         except Exception:
             self.session.rollback()
             raise
+
+    def list_comments(self, issue_id: int) -> list[CommentResponse]:
+        self._require_issue(issue_id)
+        comments = self.comment_repository.list_by_issue(issue_id)
+        return [
+            CommentResponse(
+                id=comment.id,
+                comment=comment.comment,
+                created_by={
+                    "id": comment.creator.id,
+                    "display_name": comment.creator.display_name,
+                },
+                created_at=comment.created_at,
+            )
+            for comment in comments
+        ]
+
+    def _require_issue(self, issue_id: int) -> Issue:
+        issue = self.issue_repository.find_by_id(issue_id)
+        if issue is None:
+            raise NotFoundError("Issue not found.")
+        return issue
+
+    def _require_user(self, user_id: int) -> User:
+        user = self.user_repository.find_by_id(user_id)
+        if user is None:
+            raise NotFoundError("User not found.")
+        return user

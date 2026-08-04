@@ -31,6 +31,7 @@ def test_application_has_only_approved_routes() -> None:
         "/api/projects",
         "/api/projects/{project_id}/issues",
         "/api/issues/{issue_id}",
+        "/api/issues/{issue_id}/comments",
         "/api/issues/{issue_id}/status",
     }
 

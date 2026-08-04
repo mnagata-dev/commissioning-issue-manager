@@ -789,7 +789,10 @@ AIService は SQLAlchemy Session を保持せず、commit および rollback を
 ### Responsibilities
 
 - Issue 存在確認
+- User 存在確認
 - Comment 追加
+- Comment 一覧取得
+- Comment の DTO 変換
 
 ### Main Methods
 
@@ -799,9 +802,23 @@ create_comment(
     request: CreateCommentRequest,
     user_id: int
 ) -> int
+
+list_comments(
+    issue_id: int
+) -> list[CommentResponse]
 ```
 
-Commentは編集・削除しない。
+`create_comment()` は作成した Comment の ID を返却する。
+
+`list_comments()` は Issue の存在を確認した後、`CommentRepository.list_by_issue()` を使用して Comment 一覧を取得する。
+
+取得した Comment は `CommentResponse` へ変換して返す。
+
+Comment 一覧の並び順は `CommentRepository.list_by_issue()` が返す順序を維持する。
+
+`list_comments()` は読み取り処理であり、commit および rollback を行わない。
+
+Comment は編集・削除しない。
 
 ---
 
