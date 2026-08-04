@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>CIM Login</title>
+    <link rel="stylesheet" href="/css/style.css">
+  </head>
+  <body>
+    <main class="page-container login-container">
+      <section class="card" aria-labelledby="login-heading">
+        <h1 id="login-heading">CIM Login</h1>
+        <form id="login-form">
+          <div class="form-field">
+            <label for="username">Username</label>
+            <input id="username" name="username" type="text" autocomplete="username" required autofocus>
+          </div>
+          <div class="form-field">
+            <label for="password">Password</label>
+            <input id="password" name="password" type="password" autocomplete="current-password" required>
+          </div>
+          <button id="login-button" type="submit">Login</button>
+          <p id="login-loading" class="loading" role="status" hidden>ログイン中です…</p>
+          <p id="login-error" class="alert" role="alert" hidden></p>
+        </form>
+      </section>
+    </main>
+    <script type="module" src="/js/login.js"></script>
+  </body>
+</html>

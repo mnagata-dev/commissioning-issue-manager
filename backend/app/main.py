@@ -1,10 +1,12 @@
 """FastAPI application entry point."""
 
 import logging
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.api.routes import (
@@ -19,6 +21,8 @@ from app.core.config import Settings, settings
 from app.core.exceptions import ApplicationError, ValidationError
 
 logger = logging.getLogger(__name__)
+
+FRONTEND_DIRECTORY = Path(__file__).resolve().parents[2] / "frontend"
 
 
 async def application_error_handler(
@@ -73,6 +77,27 @@ def create_app(application_settings: Settings = settings) -> FastAPI:
     application.include_router(comments_router)
     application.include_router(attachments_router)
     application.include_router(ai_router)
+
+    @application.get("/", include_in_schema=False)
+    def login_page() -> FileResponse:
+        """Return the Login page."""
+        return FileResponse(FRONTEND_DIRECTORY / "index.html")
+
+    @application.get("/projects.html", include_in_schema=False)
+    def projects_page() -> FileResponse:
+        """Return the Project Selection page."""
+        return FileResponse(FRONTEND_DIRECTORY / "projects.html")
+
+    application.mount(
+        "/css",
+        StaticFiles(directory=FRONTEND_DIRECTORY / "css"),
+        name="frontend-css",
+    )
+    application.mount(
+        "/js",
+        StaticFiles(directory=FRONTEND_DIRECTORY / "js"),
+        name="frontend-js",
+    )
     return application
 
 

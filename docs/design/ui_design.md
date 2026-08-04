@@ -129,6 +129,18 @@ AIが生成した内容は、必ずユーザーが確認・修正してから保
 |Issue Edit|Issue 編集画面|
 |Administration|管理メニュー画面|
 
+## 5.1 Screen URLs
+
+初期版の主要画面URLを以下に示す。
+
+|画面|URL|
+|---|---|
+|Login|`/`|
+|Project Selection|`/projects.html`|
+|Issue List|`/issues.html`|
+
+その他の画面URLは、各画面の実装前に定義する。
+
 ---
 
 # 6. Screen Navigation
@@ -158,6 +170,16 @@ Administration
  ├── User Management
  └── Master Data Management
 ```
+
+## 6.1 Authentication and Selection Navigation
+
+画面遷移は以下のルールに従う。
+
+- Login 成功後は Project Selection 画面へ遷移する。
+- 認証済みユーザーが Login 画面を表示した場合は、Project Selection 画面へ遷移する。
+- 認証が必要な画面で未認証または Session 期限切れを検出した場合は、Login 画面へ遷移する。
+- Project を選択していない状態で Issue List 画面を表示した場合は、Project Selection 画面へ遷移する。
+- 選択した Project は、同一ブラウザセッション中の画面遷移で維持する。
 
 ---
 
@@ -267,8 +289,9 @@ Error Message
 
 |操作|内容|
 |---|---|
-|Login|認証を実行する。|
+|Login|認証を実行する。認証成功後は Project Selection 画面へ遷移する。|
 |Enter Key|ログインを実行する。|
+|Open Login while Authenticated|認証済みの場合は Project Selection 画面へ遷移する。|
 
 ---
 
@@ -320,8 +343,9 @@ Project List
 
 |操作|内容|
 |---|---|
-|Select Project|Project を選択する。|
-|Confirm|Issue List 画面へ遷移する。|
+|Select Project|作業対象となる Project を選択する。|
+|Confirm|選択した Project を同一ブラウザセッション中に保持し、Issue List 画面へ遷移する。|
+|Open without Authentication|Login 画面へ遷移する。|
 
 ---
 
@@ -440,6 +464,8 @@ Processor cannot communicate with gateway.
 |Open Issue|Issue Detail 画面へ遷移する。|
 |New Issue|Issue Create 画面へ遷移する。|
 |Change Project|Project Selection 画面へ戻る。|
+|Open without Selected Project|Project Selection 画面へ遷移する。|
+|Open without Authentication|Login 画面へ遷移する。|
 
 ---
 

@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Project Selection | CIM</title>
+    <link rel="stylesheet" href="/css/style.css">
+  </head>
+  <body>
+    <main class="page-container">
+      <section class="card" aria-labelledby="projects-heading">
+        <header class="page-header">
+          <div>
+            <h1 id="projects-heading">Project Selection</h1>
+            <p id="current-user" class="current-user"></p>
+          </div>
+          <button id="logout-button" class="secondary-button" type="button">Logout</button>
+        </header>
+
+        <form id="project-form">
+          <fieldset id="project-fieldset" disabled>
+            <legend>Project List</legend>
+            <div id="project-list" class="project-list"></div>
+          </fieldset>
+          <p id="project-loading" class="loading" role="status">Project を読み込んでいます…</p>
+          <p id="project-empty" class="empty-state" hidden>選択できる Project がありません。</p>
+          <p id="project-error" class="alert" role="alert" hidden></p>
+          <button id="select-project-button" type="submit" disabled>Select Project</button>
+        </form>
+      </section>
+    </main>
+    <script type="module" src="/js/projects.js"></script>
+  </body>
+</html>
