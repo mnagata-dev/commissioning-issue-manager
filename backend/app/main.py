@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.api.routes import (
+    ai_router,
     attachments_router,
     auth_router,
     comments_router,
@@ -71,6 +72,7 @@ def create_app(application_settings: Settings = settings) -> FastAPI:
     application.include_router(issues_router)
     application.include_router(comments_router)
     application.include_router(attachments_router)
+    application.include_router(ai_router)
     return application
 
 

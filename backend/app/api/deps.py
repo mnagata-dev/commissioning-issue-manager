@@ -5,6 +5,7 @@ from typing import Annotated
 from fastapi import Depends, Request
 from sqlalchemy.orm import Session
 
+from app.clients import OllamaClient
 from app.core.config import settings
 from app.core.exceptions import AuthenticationError, AuthorizationError
 from app.db.session import get_db_session
@@ -19,6 +20,7 @@ from app.repositories import (
 )
 from app.schemas import CurrentUserResponse
 from app.services import (
+    AIService,
     AttachmentService,
     AuthService,
     CommentService,
@@ -28,6 +30,19 @@ from app.services import (
 )
 
 DatabaseSession = Annotated[Session, Depends(get_db_session)]
+
+
+def get_ai_service(session: DatabaseSession) -> AIService:
+    """Construct the AI service for the current request."""
+    return AIService(
+        ProjectRepository(session),
+        RoomRepository(session),
+        OllamaClient(settings.ollama_host, settings.ollama_timeout_seconds),
+        settings.ollama_model,
+    )
+
+
+AIServiceDependency = Annotated[AIService, Depends(get_ai_service)]
 
 
 def get_auth_service(session: DatabaseSession) -> AuthService:
@@ -115,6 +130,7 @@ def require_administrator(
 
 
 __all__ = [
+    "get_ai_service",
     "get_auth_service",
     "get_attachment_service",
     "get_comment_service",
