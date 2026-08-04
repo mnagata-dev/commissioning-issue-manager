@@ -602,9 +602,9 @@ Service Layer は業務ロジックを担当し、API RouterとRepository Layer 
 |ProjectService|Project 取得|
 |IssueService|Issue 登録・更新・参照|
 |AIService|AI Draft 生成|
-|CommentService|Comment 追加|
-|AttachmentService|Attachment 追加・削除|
-|StorageService|添付ファイル保存・削除|
+|CommentService|Comment 追加・一覧取得|
+|AttachmentService|Attachment 追加・一覧取得・ダウンロード・削除|
+|StorageService|添付ファイル保存・取得・削除|
 
 ---
 
@@ -828,11 +828,15 @@ Comment は編集・削除しない。
 
 - Issue 存在確認
 - User 存在確認
+- Attachment 存在確認
+- Attachment と Issue の所属確認
+- Attachment 一覧取得
+- Attachment の DTO 変換
+- ダウンロード対象ファイルの取得
 - ファイル名、ファイル形式、ファイルサイズの検証
 - StorageService を使用したファイル保存
 - Attachment メタデータ登録
 - Upload 失敗時のファイル補償削除
-- Attachment と Issue の所属確認
 - StorageService を使用した Attachment 削除
 - DB と Local Storage の整合性制御
 
@@ -845,6 +849,14 @@ upload_attachment(
     user_id: int
 ) -> UploadAttachmentResponse
 
+list_attachments(
+    issue_id: int
+) -> list[AttachmentResponse]
+
+get_attachment_download(
+    attachment_id: int
+) -> tuple[Path, str, str]
+
 delete_attachment(
     issue_id: int,
     attachment_id: int,
@@ -854,11 +866,51 @@ delete_attachment(
 
 `upload_attachment()` および `delete_attachment()` では User の存在を確認する。
 
+`list_attachments()` は Issue の存在を確認した後、`AttachmentRepository.list_by_issue()` を使用して Attachment 一覧を取得する。
+
+取得した Attachment は `AttachmentResponse` へ変換して返す。
+
+Attachment 一覧の並び順は `AttachmentRepository.list_by_issue()` が返す順序を維持する。
+
+`list_attachments()` は読み取り処理であり、commit および rollback を行わない。
+
+`get_attachment_download()` は `AttachmentRepository.find_by_id()` を使用して Attachment メタデータを取得する。
+
+Attachment メタデータが存在しない場合は `NotFoundError` とする。
+
+Attachment の `file_path` を `StorageService.resolve_file()` へ渡し、Storage Root 配下の安全な物理ファイルパスを取得する。
+
+対応する物理ファイルが存在しない場合は `NotFoundError` とする。
+
+`get_attachment_download()` は以下を順に保持する tuple を返す。
+
+```python
+(
+    file_path,
+    original_file_name,
+    mime_type,
+)
+```
+
+各要素の型と用途は以下とする。
+
+|要素|型|用途|
+|---|---|---|
+|`file_path`|`Path`|返却する物理ファイル|
+|`original_file_name`|`str`|`Content-Disposition` のファイル名|
+|`mime_type`|`str`|`Content-Type`|
+
+API Router は返却値を使用してファイルレスポンスを生成する。
+
+ファイルレスポンスの `Content-Disposition` は `inline` とする。
+
+`get_attachment_download()` は読み取り処理であり、commit および rollback を行わない。
+
 `delete_attachment()` の `user_id` は初期版では User 存在確認にのみ使用し、削除者の監査情報や認可判定には使用しない。
 
-AttachmentService は DB Transaction を管理する。
+AttachmentService は書き込み処理の DB Transaction を管理する。
 
-Repository は commit / rollback を行わない。
+Repository は commit および rollback を行わない。
 
 ---
 
@@ -867,6 +919,7 @@ Repository は commit / rollback を行わない。
 ### Responsibilities
 
 - ファイル保存
+- ファイル取得
 - ファイル削除
 - 削除対象ファイルの一時退避
 - 一時退避ファイルの復元
@@ -882,10 +935,29 @@ save_file(
     file: UploadFile
 ) -> StoredFile
 
+resolve_file(
+    file_path: str
+) -> Path | None
+
 delete_file(
     file_path: str
 ) -> None
 ```
+
+`resolve_file()` は、DB に保存された Storage Root からの相対パスを受け取り、Storage Root 配下の安全な物理ファイルパスへ解決する。
+
+以下を確認する。
+
+- `file_path` が絶対パスではないこと。
+- `..` 等により Storage Root 外へ逸脱しないこと。
+- symlink を経由して Storage Root 外へ逸脱しないこと。
+- 解決先が通常ファイルであること。
+
+対象ファイルが存在しない場合は `None` を返す。
+
+Storage Root 外への逸脱、無効なパス、またはファイルシステム処理の失敗は `StorageError` とする。
+
+`resolve_file()` はファイル内容をメモリへ一括読み込みしない。
 
 DB 削除との整合性制御に必要な一時退避・復元処理は StorageService の内部責務とする。
 

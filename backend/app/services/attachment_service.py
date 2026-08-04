@@ -2,7 +2,7 @@
 
 from datetime import datetime, timezone
 import logging
-from pathlib import PurePath
+from pathlib import Path, PurePath
 
 from fastapi import UploadFile
 from sqlalchemy.orm import Session
@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.core.exceptions import NotFoundError, StorageError, ValidationError
 from app.models import Attachment, Issue, User
 from app.repositories import AttachmentRepository, IssueRepository, UserRepository
-from app.schemas import UploadAttachmentResponse
+from app.schemas import AttachmentResponse, UploadAttachmentResponse
 from app.services.storage_service import StorageService, StoredFile
 
 logger = logging.getLogger(__name__)
@@ -80,6 +80,29 @@ class AttachmentService:
             file_name=created.file_name,
             message="Attachment uploaded",
         )
+
+    def list_attachments(self, issue_id: int) -> list[AttachmentResponse]:
+        self._require_issue(issue_id)
+        attachments = self.attachment_repository.list_by_issue(issue_id)
+        return [
+            AttachmentResponse(
+                id=attachment.id,
+                file_name=attachment.file_name,
+                mime_type=attachment.mime_type,
+                file_size=attachment.file_size,
+                uploaded_at=attachment.uploaded_at,
+            )
+            for attachment in attachments
+        ]
+
+    def get_attachment_download(self, attachment_id: int) -> tuple[Path, str, str]:
+        attachment = self.attachment_repository.find_by_id(attachment_id)
+        if attachment is None:
+            raise NotFoundError("Attachment not found.")
+        file_path = self.storage_service.resolve_file(attachment.file_path)
+        if file_path is None:
+            raise NotFoundError("Attachment file not found.")
+        return file_path, attachment.original_file_name, attachment.mime_type
 
     def delete_attachment(
         self, issue_id: int, attachment_id: int, user_id: int

@@ -1,5 +1,7 @@
+from datetime import datetime
 from io import BytesIO
 import logging
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
@@ -242,6 +244,101 @@ def test_upload_compensation_failure_prioritizes_storage_error(
         and "compensate attachment upload" in record.getMessage().lower()
         for record in caplog.records
     )
+
+
+def test_list_attachments_preserves_order_and_converts_dtos(
+    service, session, repositories, domain_entities
+) -> None:
+    first = domain_entities["attachment"]
+    first.id = 8
+    first.file_name = "first.jpg"
+    first.mime_type = "image/jpeg"
+    first.file_size = 10
+    first.uploaded_at = datetime(2026, 8, 4, 10, 20)
+    second = MagicMock(
+        id=9,
+        file_name="second.mp4",
+        mime_type="video/mp4",
+        file_size=20,
+        uploaded_at=datetime(2026, 8, 4, 10, 21),
+    )
+    repositories[2].list_by_issue.return_value = [first, second]
+
+    result = service.list_attachments(6)
+
+    assert [item.id for item in result] == [8, 9]
+    assert result[0].model_dump() == {
+        "id": 8,
+        "file_name": "first.jpg",
+        "mime_type": "image/jpeg",
+        "file_size": 10,
+        "uploaded_at": datetime(2026, 8, 4, 10, 20),
+    }
+    repositories[2].list_by_issue.assert_called_once_with(6)
+    session.commit.assert_not_called()
+    session.rollback.assert_not_called()
+
+
+def test_list_attachments_returns_empty_list(service, session, repositories) -> None:
+    repositories[2].list_by_issue.return_value = []
+
+    assert service.list_attachments(6) == []
+    session.commit.assert_not_called()
+    session.rollback.assert_not_called()
+
+
+def test_list_attachments_requires_issue(service, session, repositories) -> None:
+    repositories[0].find_by_id.return_value = None
+
+    with pytest.raises(NotFoundError, match="Issue not found"):
+        service.list_attachments(99)
+
+    repositories[2].list_by_issue.assert_not_called()
+    session.commit.assert_not_called()
+    session.rollback.assert_not_called()
+
+
+def test_get_attachment_download_returns_approved_tuple(
+    service, session, repositories, storage_service
+) -> None:
+    attachment = repositories[2].find_by_id.return_value
+    attachment.file_path = "attachments/issues/6/stored.jpg"
+    attachment.original_file_name = "photo.jpg"
+    attachment.mime_type = "image/jpeg"
+    resolved = Path("/safe/storage/attachments/issues/6/stored.jpg")
+    storage_service.resolve_file.return_value = resolved
+
+    result = service.get_attachment_download(attachment.id)
+
+    assert result == (resolved, "photo.jpg", "image/jpeg")
+    storage_service.resolve_file.assert_called_once_with(attachment.file_path)
+    session.commit.assert_not_called()
+    session.rollback.assert_not_called()
+
+
+def test_get_attachment_download_handles_missing_metadata(
+    service, session, repositories, storage_service
+) -> None:
+    repositories[2].find_by_id.return_value = None
+
+    with pytest.raises(NotFoundError, match="Attachment not found"):
+        service.get_attachment_download(99)
+
+    storage_service.resolve_file.assert_not_called()
+    session.commit.assert_not_called()
+    session.rollback.assert_not_called()
+
+
+def test_get_attachment_download_handles_missing_file(
+    service, session, repositories, storage_service
+) -> None:
+    storage_service.resolve_file.return_value = None
+
+    with pytest.raises(NotFoundError, match="Attachment file not found"):
+        service.get_attachment_download(8)
+
+    session.commit.assert_not_called()
+    session.rollback.assert_not_called()
 
 
 def test_delete_success_stages_commits_and_purges(
