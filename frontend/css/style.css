@@ -49,6 +49,8 @@ legend {
 
 input[type="text"],
 input[type="password"],
+input[type="file"],
+textarea,
 select {
   width: 100%;
   min-height: 2.75rem;
@@ -107,6 +109,16 @@ a:focus-visible {
   color: #7a271a;
   background: #fef3f2;
   white-space: pre-line;
+}
+
+.notice {
+  margin: 1rem 0 0;
+  padding: 0.75rem;
+  border: 1px solid #2e7d32;
+  border-left-width: 0.35rem;
+  border-radius: 0.25rem;
+  color: #1b5e20;
+  background: #f1f8e9;
 }
 
 .loading,
@@ -228,6 +240,125 @@ a:focus-visible {
   background: #0d477f;
 }
 
+.secondary-link {
+  display: inline-block;
+  min-height: 2.75rem;
+  padding: 0.65rem 1rem;
+  border: 1px solid #52616b;
+  border-radius: 0.3rem;
+  color: #263238;
+  background: #fff;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.secondary-link:hover {
+  background: #edf1f3;
+}
+
+.issue-details,
+.issue-metadata {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.issue-details > div,
+.issue-metadata > div {
+  min-width: 0;
+}
+
+.issue-details dt,
+.issue-metadata dt {
+  color: #52616b;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.issue-details dd,
+.issue-metadata dd {
+  margin: 0.15rem 0 0;
+  overflow-wrap: anywhere;
+}
+
+.detail-section {
+  margin-top: 1.75rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #d8dee4;
+}
+
+.detail-section h2 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.detail-description,
+.item-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.issue-metadata {
+  margin-top: 1.25rem;
+}
+
+.section-heading,
+.form-actions,
+.detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.detail-list {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.detail-list-item {
+  padding: 0.9rem;
+  border: 1px solid #aeb8c2;
+  border-radius: 0.35rem;
+}
+
+.detail-list-item p {
+  margin: 0;
+}
+
+.detail-list-item p + p,
+.attachment-item a {
+  margin-top: 0.45rem;
+}
+
+.item-author {
+  font-weight: 600;
+}
+
+.item-metadata {
+  color: #52616b;
+  font-size: 0.9rem;
+}
+
+.inline-form {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid #d8dee4;
+  border-radius: 0.35rem;
+  background: #f8fafb;
+}
+
+.detail-actions {
+  justify-content: flex-start;
+  margin-top: 1.75rem;
+}
+
+.detail-actions .button-link {
+  margin-top: 0;
+}
+
 fieldset {
   min-width: 0;
   margin: 0 0 1.25rem;
@@ -305,5 +436,10 @@ legend {
   .search-form button {
     grid-column: 1 / -1;
     justify-self: start;
+  }
+
+  .issue-details,
+  .issue-metadata {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

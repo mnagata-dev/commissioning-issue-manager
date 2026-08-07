@@ -63,6 +63,32 @@ def test_issue_list_page_is_delivered_and_excluded_from_openapi() -> None:
     assert "/issues.html" not in openapi_paths
 
 
+def test_issue_detail_page_is_delivered_and_excluded_from_openapi() -> None:
+    with make_client() as client:
+        response = client.get("/issue.html")
+        openapi_paths = client.get("/openapi.json").json()["paths"]
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/html")
+    assert "Issue Detail" in response.text
+    assert 'id="issue-content"' in response.text
+    assert 'id="issue-status"' in response.text
+    assert 'id="issue-target-type"' in response.text
+    assert 'id="issue-room"' in response.text
+    assert 'id="issue-target"' in response.text
+    assert 'id="issue-category"' in response.text
+    assert 'id="issue-description"' in response.text
+    assert 'id="comment-list"' in response.text
+    assert 'id="attachment-list"' in response.text
+    assert 'id="edit-issue-link"' in response.text
+    assert 'id="add-comment-button"' in response.text
+    assert 'id="upload-attachment-button"' in response.text
+    assert 'id="back-to-issues-link"' in response.text
+    assert 'href="/css/style.css"' in response.text
+    assert 'src="/js/issue.js"' in response.text
+    assert "/issue.html" not in openapi_paths
+
+
 def test_css_is_delivered() -> None:
     with make_client() as client:
         response = client.get("/css/style.css")
@@ -76,7 +102,14 @@ def test_javascript_modules_are_delivered() -> None:
     with make_client() as client:
         responses = [
             client.get(f"/js/{filename}")
-            for filename in ("api.js", "auth.js", "login.js", "projects.js", "issues.js")
+            for filename in (
+                "api.js",
+                "auth.js",
+                "login.js",
+                "projects.js",
+                "issues.js",
+                "issue.js",
+            )
         ]
 
     for response in responses:

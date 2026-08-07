@@ -25,6 +25,7 @@ def test_application_has_only_approved_routes() -> None:
     assert "/" not in paths
     assert "/projects.html" not in paths
     assert "/issues.html" not in paths
+    assert "/issue.html" not in paths
     assert "/health" not in paths
     assert {path for path in paths if path.startswith("/api/")} == {
         "/api/auth/login",

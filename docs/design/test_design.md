@@ -506,6 +506,9 @@ FastAPI TestClient を利用する。
 |Upload Attachment|Attachment を追加できること|
 |Open Attachment|添付ファイルを表示できること|
 |Back|Issue List へ戻ること|
+|Invalid Issue ID|Issue ID が指定されていない、または不正な場合、Issue List 画面へ遷移すること|
+|Issue Not Found|存在しない Issue の場合、Issue List 画面へ遷移すること|
+|Authentication Failure|認証が必要な API から `401 Unauthorized` が返却された場合、Login 画面へ遷移すること|
 
 ---
 
