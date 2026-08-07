@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Issue List | CIM</title>
+    <link rel="stylesheet" href="/css/style.css">
+  </head>
+  <body>
+    <main class="page-container issue-page">
+      <section class="card" aria-labelledby="issues-heading">
+        <header class="page-header">
+          <div>
+            <h1 id="issues-heading">Issue List</h1>
+            <p id="current-project" class="current-project"></p>
+            <p id="current-user" class="current-user"></p>
+          </div>
+          <div class="header-actions">
+            <button id="change-project-button" class="secondary-button" type="button">Change Project</button>
+            <button id="logout-button" class="secondary-button" type="button">Logout</button>
+          </div>
+        </header>
+
+        <form id="issue-search-form" class="search-form">
+          <div class="form-field filter-keyword">
+            <label for="keyword">Keyword</label>
+            <input id="keyword" name="keyword" type="text">
+          </div>
+          <div class="form-field">
+            <label for="status">Status</label>
+            <select id="status" name="status">
+              <option value="">All</option>
+              <option value="OPEN">OPEN</option>
+              <option value="IN_PROGRESS">IN_PROGRESS</option>
+              <option value="RESOLVED">RESOLVED</option>
+              <option value="CLOSED">CLOSED</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="category">Category</label>
+            <select id="category" name="category">
+              <option value="">All</option>
+              <option value="LIGHTING">LIGHTING</option>
+              <option value="SHADE">SHADE</option>
+              <option value="KEYPAD">KEYPAD</option>
+              <option value="SENSOR">SENSOR</option>
+              <option value="TSTAT">TSTAT</option>
+              <option value="PROCESSOR">PROCESSOR</option>
+              <option value="NETWORK">NETWORK</option>
+              <option value="SERVER">SERVER</option>
+              <option value="INTEGRATION">INTEGRATION</option>
+              <option value="OTHER">OTHER</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="target-type">Target Type</label>
+            <select id="target-type" name="target_type">
+              <option value="">All</option>
+              <option value="ROOM">ROOM</option>
+              <option value="OTHER">OTHER</option>
+            </select>
+          </div>
+          <button id="search-button" type="submit">Search</button>
+        </form>
+
+        <p id="issue-loading" class="loading" role="status" hidden>Issue を読み込んでいます…</p>
+        <p id="issue-error" class="alert" role="alert" hidden></p>
+        <p id="issue-empty" class="empty-state" hidden>該当するIssueはありません。</p>
+        <div id="issue-list" class="issue-list"></div>
+
+        <div class="list-footer">
+          <p class="result-summary"><span id="total-count">0</span> 件 / Page <span id="current-page">1</span></p>
+          <nav id="pagination" class="pagination" aria-label="Issue list pages">
+            <button id="previous-button" class="secondary-button" type="button" disabled>Previous</button>
+            <button id="next-button" class="secondary-button" type="button" disabled>Next</button>
+          </nav>
+        </div>
+
+        <a id="new-issue-link" class="button-link" href="/issue-create.html">New Issue</a>
+      </section>
+    </main>
+    <script type="module" src="/js/issues.js"></script>
+  </body>
+</html>

@@ -214,13 +214,15 @@ Frontend はリポジトリ直下の `frontend/` に配置する。
 frontend/
 ├── index.html
 ├── projects.html
+├── issues.html
 ├── css/
 │   └── style.css
 └── js/
     ├── api.js
     ├── auth.js
     ├── login.js
-    └── projects.js
+    ├── projects.js
+    └── issues.js
 ```
 
 Frontend は HTML、CSS および JavaScript で構成する。
@@ -239,6 +241,7 @@ Frontend と Backend は同一 Origin とする。
 |---|---|
 |`/`|`frontend/index.html`|
 |`/projects.html`|`frontend/projects.html`|
+|`/issues.html`|`frontend/issues.html`|
 |`/css/*`|`frontend/css/*`|
 |`/js/*`|`frontend/js/*`|
 

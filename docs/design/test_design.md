@@ -480,9 +480,15 @@ FastAPI TestClient を利用する。
 |テスト項目|内容|
 |---|---|
 |List Display|Issue 一覧が表示されること|
+|Initial Search Conditions|初期表示時は検索条件が指定されず、選択中 Project の Issue 一覧が表示されること|
+|All Options|Status、Category および Target Type に `All` が表示されること|
 |Search|検索条件で絞り込みできること|
-|Open Detail|Issue Detail へ遷移すること|
-|New Issue|Issue Create へ遷移すること|
+|Search Page Reset|検索実行時に1ページ目が表示されること|
+|Pagination|Previous Page および Next Page でページ移動できること|
+|Pagination Boundary|前後のページが存在しない場合、対応するページ移動操作が無効になること|
+|Page Size|1ページあたりの表示件数が20件であること|
+|Open Detail|Issue Detail 画面へ遷移すること|
+|New Issue|Issue Create 画面へ遷移すること|
 |No Selected Project|Project が選択されていない場合、Project Selection 画面へ遷移すること|
 |Authentication Failure|認証が必要な API から `401 Unauthorized` が返却された場合、Login 画面へ遷移すること|
 

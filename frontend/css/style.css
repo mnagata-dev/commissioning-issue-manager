@@ -48,7 +48,8 @@ legend {
 }
 
 input[type="text"],
-input[type="password"] {
+input[type="password"],
+select {
   width: 100%;
   min-height: 2.75rem;
   margin-top: 0.4rem;
@@ -80,7 +81,9 @@ button:disabled {
 }
 
 button:focus-visible,
-input:focus-visible {
+input:focus-visible,
+select:focus-visible,
+a:focus-visible {
   outline: 0.2rem solid #f0a202;
   outline-offset: 0.15rem;
 }
@@ -127,6 +130,102 @@ input:focus-visible {
 
 .current-user {
   margin: 0;
+}
+
+.current-project {
+  margin: 0 0 0.2rem;
+  font-weight: 600;
+}
+
+.header-actions,
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.search-form {
+  display: grid;
+  gap: 0 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.search-form .form-field {
+  margin-bottom: 1rem;
+}
+
+.issue-list {
+  display: grid;
+  gap: 1rem;
+  margin: 1.25rem 0;
+}
+
+.issue-item {
+  padding: 1rem;
+  border: 1px solid #aeb8c2;
+  border-radius: 0.35rem;
+}
+
+.issue-item-heading,
+.list-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.status-badge {
+  padding: 0.2rem 0.55rem;
+  border: 1px solid #135ca8;
+  border-radius: 999px;
+  color: #0d477f;
+  background: #eef6ff;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.issue-category,
+.issue-updated-at,
+.result-summary {
+  color: #52616b;
+  font-size: 0.9rem;
+}
+
+.issue-target {
+  margin: 0.85rem 0 0.35rem;
+  font-weight: 600;
+}
+
+.issue-description {
+  margin: 0.35rem 0;
+  overflow-wrap: anywhere;
+}
+
+.issue-updated-at {
+  margin: 0.35rem 0 0.75rem;
+}
+
+.issue-link,
+.button-link {
+  color: #135ca8;
+  font-weight: 600;
+}
+
+.button-link {
+  display: inline-block;
+  min-height: 2.75rem;
+  margin-top: 1.25rem;
+  padding: 0.65rem 1rem;
+  border: 1px solid #135ca8;
+  border-radius: 0.3rem;
+  color: #fff;
+  background: #135ca8;
+  text-decoration: none;
+}
+
+.button-link:hover {
+  background: #0d477f;
 }
 
 fieldset {
@@ -192,5 +291,19 @@ legend {
 
   .card {
     padding: 2rem;
+  }
+
+  .issue-page {
+    width: min(100% - 2rem, 64rem);
+  }
+
+  .search-form {
+    grid-template-columns: 2fr repeat(3, 1fr);
+    align-items: end;
+  }
+
+  .search-form button {
+    grid-column: 1 / -1;
+    justify-self: start;
   }
 }

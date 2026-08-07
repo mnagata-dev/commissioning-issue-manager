@@ -41,6 +41,28 @@ def test_project_page_is_delivered_and_excluded_from_openapi() -> None:
     assert "/projects.html" not in openapi_paths
 
 
+def test_issue_list_page_is_delivered_and_excluded_from_openapi() -> None:
+    with make_client() as client:
+        response = client.get("/issues.html")
+        openapi_paths = client.get("/openapi.json").json()["paths"]
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/html")
+    assert "Issue List" in response.text
+    assert 'id="issue-search-form"' in response.text
+    assert 'id="keyword"' in response.text
+    assert 'id="status"' in response.text
+    assert 'id="category"' in response.text
+    assert 'id="target-type"' in response.text
+    assert 'id="issue-list"' in response.text
+    assert 'id="pagination"' in response.text
+    assert 'id="logout-button"' in response.text
+    assert 'id="change-project-button"' in response.text
+    assert 'href="/css/style.css"' in response.text
+    assert 'src="/js/issues.js"' in response.text
+    assert "/issues.html" not in openapi_paths
+
+
 def test_css_is_delivered() -> None:
     with make_client() as client:
         response = client.get("/css/style.css")
@@ -54,7 +76,7 @@ def test_javascript_modules_are_delivered() -> None:
     with make_client() as client:
         responses = [
             client.get(f"/js/{filename}")
-            for filename in ("api.js", "auth.js", "login.js", "projects.js")
+            for filename in ("api.js", "auth.js", "login.js", "projects.js", "issues.js")
         ]
 
     for response in responses:
@@ -79,7 +101,11 @@ def test_unknown_resources_do_not_use_login_page_fallback() -> None:
 
 def test_api_routes_still_resolve_as_json() -> None:
     with make_client() as client:
-        responses = [client.get("/api/auth/me"), client.get("/api/projects")]
+        responses = [
+            client.get("/api/auth/me"),
+            client.get("/api/projects"),
+            client.get("/api/projects/1/issues"),
+        ]
 
     for response in responses:
         assert response.status_code == 401
