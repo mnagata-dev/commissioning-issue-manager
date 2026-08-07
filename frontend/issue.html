@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Issue Detail | CIM</title>
+    <link rel="stylesheet" href="/css/style.css">
+  </head>
+  <body>
+    <main class="page-container issue-page">
+      <section class="card" aria-labelledby="issue-heading">
+        <header class="page-header">
+          <div>
+            <h1 id="issue-heading">Issue Detail</h1>
+            <p id="current-project" class="current-project"></p>
+            <p id="current-user" class="current-user"></p>
+          </div>
+          <button id="logout-button" class="secondary-button" type="button">Logout</button>
+        </header>
+
+        <p id="issue-loading" class="loading" role="status">Issue を読み込んでいます…</p>
+        <p id="issue-message" class="notice" role="status" hidden></p>
+        <p id="issue-error" class="alert" role="alert" hidden></p>
+
+        <div id="issue-content" hidden>
+          <dl class="issue-details">
+            <div>
+              <dt>Status</dt>
+              <dd id="issue-status"></dd>
+            </div>
+            <div>
+              <dt>Target Type</dt>
+              <dd id="issue-target-type"></dd>
+            </div>
+            <div id="room-detail">
+              <dt>Room</dt>
+              <dd id="issue-room"></dd>
+            </div>
+            <div id="target-detail">
+              <dt>Target</dt>
+              <dd id="issue-target"></dd>
+            </div>
+            <div>
+              <dt>Category</dt>
+              <dd id="issue-category"></dd>
+            </div>
+          </dl>
+
+          <section class="detail-section" aria-labelledby="description-heading">
+            <h2 id="description-heading">Description</h2>
+            <p id="issue-description" class="detail-description"></p>
+            <dl class="issue-metadata">
+              <div><dt>Created By</dt><dd id="issue-created-by"></dd></div>
+              <div><dt>Created At</dt><dd id="issue-created-at"></dd></div>
+              <div><dt>Updated By</dt><dd id="issue-updated-by"></dd></div>
+              <div><dt>Updated At</dt><dd id="issue-updated-at"></dd></div>
+            </dl>
+          </section>
+
+          <section class="detail-section" aria-labelledby="comments-heading">
+            <div class="section-heading">
+              <h2 id="comments-heading">Comments</h2>
+              <button id="add-comment-button" class="secondary-button" type="button" disabled>Add Comment</button>
+            </div>
+            <p id="comments-empty" class="empty-state" hidden>コメントはありません。</p>
+            <div id="comment-list" class="detail-list"></div>
+            <form id="comment-form" class="inline-form" hidden>
+              <div class="form-field">
+                <label for="comment-input">Comment</label>
+                <textarea id="comment-input" name="comment" rows="4" required></textarea>
+              </div>
+              <div class="form-actions">
+                <button id="comment-submit-button" type="submit">Add Comment</button>
+                <button id="comment-cancel-button" class="secondary-button" type="button">Cancel</button>
+              </div>
+            </form>
+          </section>
+
+          <section class="detail-section" aria-labelledby="attachments-heading">
+            <div class="section-heading">
+              <h2 id="attachments-heading">Attachments</h2>
+              <button id="upload-attachment-button" class="secondary-button" type="button" disabled>Upload Attachment</button>
+            </div>
+            <p id="attachments-empty" class="empty-state" hidden>添付ファイルはありません。</p>
+            <div id="attachment-list" class="detail-list"></div>
+            <form id="attachment-form" class="inline-form" hidden>
+              <div class="form-field">
+                <label for="attachment-input">File</label>
+                <input id="attachment-input" name="file" type="file" required>
+              </div>
+              <div class="form-actions">
+                <button id="attachment-submit-button" type="submit">Upload Attachment</button>
+                <button id="attachment-cancel-button" class="secondary-button" type="button">Cancel</button>
+              </div>
+            </form>
+          </section>
+
+          <nav class="detail-actions" aria-label="Issue actions">
+            <a id="edit-issue-link" class="button-link" href="/issue-edit.html">Edit</a>
+            <a id="back-to-issues-link" class="secondary-link" href="/issues.html">Back</a>
+          </nav>
+        </div>
+      </section>
+    </main>
+    <script type="module" src="/js/issue.js"></script>
+  </body>
+</html>

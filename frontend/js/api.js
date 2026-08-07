@@ -65,6 +65,8 @@ export async function apiRequest(path, options = {}) {
   if (Object.hasOwn(options, "json")) {
     requestOptions.headers = { "Content-Type": "application/json" };
     requestOptions.body = JSON.stringify(options.json);
+  } else if (Object.hasOwn(options, "body")) {
+    requestOptions.body = options.body;
   }
 
   const response = await fetch(path, requestOptions);

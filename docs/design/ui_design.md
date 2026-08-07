@@ -140,6 +140,7 @@ AIが生成した内容は、必ずユーザーが確認・修正してから保
 |Issue List|`/issues.html`|
 |Issue Detail|`/issue.html?issue_id={issue_id}`|
 |Issue Create|`/issue-create.html`|
+|Issue Edit|`/issue-edit.html?issue_id={issue_id}`|
 
 その他の画面URLは、各画面の実装前に定義する。
 
@@ -609,10 +610,13 @@ video_001.mp4
 |操作|内容|
 |---|---|
 |Edit|Issue Edit 画面へ遷移する。|
-|Add Comment|Comment を追加する。|
-|Upload Attachment|Attachment を追加する。|
+|Add Comment|Issue Detail 画面内で Comment 入力欄を表示し、Comment を追加する。|
+|Upload Attachment|Issue Detail 画面内でファイルを選択し、Attachment を追加する。|
 |Open Attachment|添付ファイルを表示する。|
 |Back|Issue Listへ戻る。|
+|Open without Issue ID|Issue ID が指定されていない、または不正な場合は Issue List 画面へ遷移する。|
+|Issue Not Found|Issue が存在しない場合は Issue List 画面へ遷移する。|
+|Open without Authentication|未認証または Session 期限切れの場合は Login 画面へ遷移する。|
 
 ---
 

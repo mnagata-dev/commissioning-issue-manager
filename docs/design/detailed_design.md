@@ -215,6 +215,7 @@ frontend/
 ├── index.html
 ├── projects.html
 ├── issues.html
+├── issue.html
 ├── css/
 │   └── style.css
 └── js/
@@ -222,7 +223,8 @@ frontend/
     ├── auth.js
     ├── login.js
     ├── projects.js
-    └── issues.js
+    ├── issues.js
+    └── issue.js
 ```
 
 Frontend は HTML、CSS および JavaScript で構成する。
@@ -242,6 +244,7 @@ Frontend と Backend は同一 Origin とする。
 |`/`|`frontend/index.html`|
 |`/projects.html`|`frontend/projects.html`|
 |`/issues.html`|`frontend/issues.html`|
+|`/issue.html`|`frontend/issue.html`|
 |`/css/*`|`frontend/css/*`|
 |`/js/*`|`frontend/js/*`|
 
