@@ -138,6 +138,8 @@ AIが生成した内容は、必ずユーザーが確認・修正してから保
 |Login|`/`|
 |Project Selection|`/projects.html`|
 |Issue List|`/issues.html`|
+|Issue Detail|`/issue.html?issue_id={issue_id}`|
+|Issue Create|`/issue-create.html`|
 
 その他の画面URLは、各画面の実装前に定義する。
 
@@ -439,6 +441,10 @@ Processor cannot communicate with gateway.
 |Category|No|Category|
 |Target Type|No|Target Type|
 
+初期表示時は検索条件を指定せず、選択中 Project の Issue をすべて表示する。
+
+Status、Category および Target Type には `All` を選択肢として用意する。
+
 ---
 
 ## 10.5 Issue List Item
@@ -460,12 +466,18 @@ Processor cannot communicate with gateway.
 
 |操作|内容|
 |---|---|
-|Search|条件検索を行う。|
+|Search|条件検索を行う。検索実行時は1ページ目を表示する。|
 |Open Issue|Issue Detail 画面へ遷移する。|
 |New Issue|Issue Create 画面へ遷移する。|
+|Previous Page|前のページを表示する。|
+|Next Page|次のページを表示する。|
 |Change Project|Project Selection 画面へ戻る。|
 |Open without Selected Project|Project Selection 画面へ遷移する。|
 |Open without Authentication|Login 画面へ遷移する。|
+
+初期版では `page_size` を `20` に固定する。
+
+前後のページが存在しない場合は、対応するページ移動操作を無効にする。
 
 ---
 

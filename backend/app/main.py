@@ -88,6 +88,11 @@ def create_app(application_settings: Settings = settings) -> FastAPI:
         """Return the Project Selection page."""
         return FileResponse(FRONTEND_DIRECTORY / "projects.html")
 
+    @application.get("/issues.html", include_in_schema=False)
+    def issues_page() -> FileResponse:
+        """Return the Issue List page."""
+        return FileResponse(FRONTEND_DIRECTORY / "issues.html")
+
     application.mount(
         "/css",
         StaticFiles(directory=FRONTEND_DIRECTORY / "css"),
