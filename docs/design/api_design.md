@@ -96,6 +96,7 @@
 |Authentication|POST|/api/auth/logout|ログアウト|
 |Authentication|GET|/api/auth/me|ログイン中ユーザー取得|
 |Project|GET|/api/projects|Project一覧取得|
+|Room|GET|/api/hotels/{hotel_id}/rooms|Room一覧取得|
 |Issue|GET|/api/projects/{project_id}/issues|Issue一覧取得|
 |Issue|GET|/api/issues/{issue_id}|Issue 詳細取得|
 |Issue|POST|/api/projects/{project_id}/issues|Issue 登録|
@@ -329,9 +330,48 @@ Engineer が選択可能な Project 一覧を取得する。
 
 ---
 
-# 8. Issue API
+# 8. Room API
 
-## 8.1 Get Issue List
+## 8.1 Get Rooms
+
+### Endpoint
+
+```http
+GET /api/hotels/{hotel_id}/rooms
+```
+
+### Description
+
+指定 Hotel に属する Room 一覧を取得する。
+
+Issue Create および Issue Edit で Target Type = ROOM の場合の Room 選択に利用する。
+
+### Response
+
+```json
+{
+  "rooms": [
+    {
+      "id": 1,
+      "room_number": "1203",
+      "display_name": null
+    }
+  ]
+}
+```
+
+### Error
+
+|Status|内容|
+|---|---|
+|401|未認証|
+|404|Hotel が存在しない|
+
+---
+
+# 9. Issue API
+
+## 9.1 Get Issue List
 
 ### Endpoint
 
@@ -391,7 +431,7 @@ Issue 一覧は updated_at の降順（新しく更新された Issue を先頭�
 
 ---
 
-## 8.2 Get Issue Detail
+## 9.2 Get Issue Detail
 
 ### Endpoint
 
@@ -465,7 +505,7 @@ Comment および Attachment 一覧も含めて返却する。
 
 ---
 
-## 8.3 Create Issue
+## 9.3 Create Issue
 
 ### Endpoint
 
@@ -525,7 +565,7 @@ OTHER の例
 
 ---
 
-## 8.4 Update Issue
+## 9.4 Update Issue
 
 ### Endpoint
 
@@ -585,7 +625,7 @@ OTHER の例
 
 ---
 
-## 8.5 Update Issue Status
+## 9.5 Update Issue Status
 
 ### Endpoint
 
@@ -634,9 +674,9 @@ Issue の Status を変更する。
 
 ---
 
-# 9. AI Draft API
+# 10. AI Draft API
 
-## 9.1 Generate AI Draft
+## 10.1 Generate AI Draft
 
 ### Endpoint
 
@@ -701,9 +741,9 @@ OTHER の例
 
 ---
 
-# 10. Comment API
+# 11. Comment API
 
-## 10.1 Create Comment
+## 11.1 Create Comment
 
 ### Endpoint
 
@@ -742,7 +782,7 @@ Issue へ Comment を追加する。
 
 ---
 
-## 10.2 Get Comments
+## 11.2 Get Comments
 
 ### Endpoint
 
@@ -781,9 +821,9 @@ Issue に登録されている Comment 一覧を取得する。
 
 ---
 
-# 11. Attachment API
+# 12. Attachment API
 
-## 11.1 Upload Attachment
+## 12.1 Upload Attachment
 
 ### Endpoint
 
@@ -829,7 +869,7 @@ multipart/form-data
 
 ---
 
-## 11.2 Get Attachments
+## 12.2 Get Attachments
 
 ### Endpoint
 
@@ -866,7 +906,7 @@ Issue に添付されている Attachment 一覧を取得する。
 
 ---
 
-## 11.3 Download Attachment
+## 12.3 Download Attachment
 
 ### Endpoint
 
@@ -908,7 +948,7 @@ Attachment の物理ファイル本体を返却する。
 
 ---
 
-## 11.4 Delete Attachment
+## 12.4 Delete Attachment
 
 ### Endpoint
 
@@ -939,13 +979,13 @@ Issue から Attachment を削除する。
 
 ---
 
-# 12. Error Response
+# 13. Error Response
 
 本章では、APIで共通利用するエラーレスポンス形式を定義する。
 
 ---
 
-## 12.1 Error Response Format
+## 13.1 Error Response Format
 
 エラー時は以下の JSON 形式で返却する。
 
@@ -960,7 +1000,7 @@ Issue から Attachment を削除する。
 
 ---
 
-## 12.2 Error Codes
+## 13.2 Error Codes
 
 |Code|HTTP Status|説明|
 |---|---|---|
@@ -974,7 +1014,7 @@ Issue から Attachment を削除する。
 
 ---
 
-## 12.3 Validation Error Example
+## 13.3 Validation Error Example
 
 ```json
 {
@@ -987,7 +1027,7 @@ Issue から Attachment を削除する。
 
 ---
 
-## 12.4 Internal Server Error Example
+## 13.4 Internal Server Error Example
 
 ```json
 {
@@ -1000,13 +1040,13 @@ Issue から Attachment を削除する。
 
 ---
 
-# 13. Authorization
+# 14. Authorization
 
 本章では API の認可方針を定義する。
 
 ---
 
-## 13.1 Roles
+## 14.1 Roles
 
 システムで利用するロールを以下に示す。
 
@@ -1017,7 +1057,7 @@ Issue から Attachment を削除する。
 
 ---
 
-## 13.2 Authorization Matrix
+## 14.2 Authorization Matrix
 
 |API|Administrator|Engineer|
 |---|---|---|
@@ -1025,6 +1065,7 @@ Issue から Attachment を削除する。
 |Logout|○|○|
 |Current User|○|○|
 |Project List|○|○|
+|Room List|○|○|
 |Issue List|○|○|
 |Issue Detail|○|○|
 |Create Issue|○|○|
@@ -1040,7 +1081,7 @@ Issue から Attachment を削除する。
 
 ---
 
-## 13.3 Administration APIs
+## 14.3 Administration APIs
 
 初期版では、Project 管理・ User 管理・ Master Data 管理は CLI または CSV で実施する。
 
@@ -1050,7 +1091,7 @@ Issue から Attachment を削除する。
 
 ---
 
-# 14. API Constraints
+# 15. API Constraints
 
 初期版のAPI設計における制約を以下に示す。
 
@@ -1071,7 +1112,7 @@ Issue から Attachment を削除する。
 
 ---
 
-# 15. Future Enhancements
+# 16. Future Enhancements
 
 将来的なAPI拡張を以下に示す。
 

@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Issue Create | CIM</title>
+    <link rel="stylesheet" href="/css/style.css">
+  </head>
+  <body>
+    <main class="page-container">
+      <section class="card" aria-labelledby="create-heading">
+        <header class="page-header">
+          <div>
+            <h1 id="create-heading">Issue Create | CIM</h1>
+            <p id="current-project" class="current-project"></p>
+            <p id="current-user" class="current-user"></p>
+          </div>
+          <button id="logout-button" class="secondary-button" type="button">Logout</button>
+        </header>
+        <p id="issue-loading" class="loading" role="status">読み込んでいます…</p>
+        <p id="issue-error" class="alert" role="alert" hidden></p>
+        <form id="issue-create-form" novalidate>
+          <fieldset id="create-fields" disabled>
+            <legend>New Issue</legend>
+            <div class="form-field">
+              <label for="target-type">Target Type</label>
+              <select id="target-type" name="target_type" required aria-describedby="target-type-error">
+                <option value="">選択してください</option>
+                <option value="ROOM">ROOM</option>
+                <option value="OTHER">OTHER</option>
+              </select>
+              <p id="target-type-error" class="alert" hidden></p>
+            </div>
+            <div id="room-field" class="form-field" hidden>
+              <label for="room">Room</label>
+              <select id="room" name="room_id" disabled aria-describedby="room-error room-empty">
+                <option value="">選択してください</option>
+              </select>
+              <p id="room-empty" class="empty-state" hidden>選択できる Room がありません。</p>
+              <p id="room-error" class="alert" hidden></p>
+            </div>
+            <div id="target-field" class="form-field" hidden>
+              <label for="target">Target</label>
+              <input id="target" name="target" type="text" disabled aria-describedby="target-error">
+              <p id="target-error" class="alert" hidden></p>
+            </div>
+            <div class="form-field">
+              <label for="category">Category</label>
+              <select id="category" name="category" required aria-describedby="category-error">
+                <option value="">選択してください</option>
+                <option value="LIGHTING">LIGHTING</option>
+                <option value="SHADE">SHADE</option>
+                <option value="KEYPAD">KEYPAD</option>
+                <option value="SENSOR">SENSOR</option>
+                <option value="TSTAT">TSTAT</option>
+                <option value="PROCESSOR">PROCESSOR</option>
+                <option value="NETWORK">NETWORK</option>
+                <option value="SERVER">SERVER</option>
+                <option value="INTEGRATION">INTEGRATION</option>
+                <option value="OTHER">OTHER</option>
+              </select>
+              <p id="category-error" class="alert" hidden></p>
+            </div>
+            <div class="form-field">
+              <label for="description">Description</label>
+              <textarea id="description" name="description" rows="5" required aria-describedby="description-error"></textarea>
+              <p id="description-error" class="alert" hidden></p>
+            </div>
+            <section class="detail-section" aria-labelledby="draft-heading">
+              <h2 id="draft-heading">AI Draft</h2>
+              <p>生成された Category と Description を確認・修正してから Create を押してください。</p>
+              <div class="form-field">
+                <label for="input-text">Voice / Text Input</label>
+                <textarea id="input-text" rows="3" aria-describedby="input-help input-text-error"></textarea>
+                <p id="input-help" class="item-metadata">テキストを入力するか、端末の音声入力を使用してください。</p>
+                <p id="input-text-error" class="alert" hidden></p>
+              </div>
+              <button id="generate-draft-button" class="secondary-button" type="button">Generate AI Draft</button>
+              <p id="draft-message" class="notice" role="status" hidden>AI Draft を反映しました。内容を確認・修正してください。</p>
+            </section>
+            <div class="detail-actions">
+              <button id="create-button" type="submit">Create</button>
+            </div>
+          </fieldset>
+        </form>
+        <a id="cancel-link" class="secondary-link" href="/issues.html">Cancel</a>
+      </section>
+    </main>
+    <script type="module" src="/js/issue-create.js"></script>
+  </body>
+</html>
