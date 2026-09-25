@@ -151,6 +151,7 @@ backend/
 │   │   └── routes/
 │   │       ├── auth.py
 │   │       ├── projects.py
+│   │       ├── rooms.py
 │   │       ├── issues.py
 │   │       ├── ai.py
 │   │       ├── comments.py
@@ -169,6 +170,7 @@ backend/
 │   ├── schemas/
 │   │   ├── auth.py
 │   │   ├── project.py
+│   │   ├── room.py
 │   │   ├── issue.py
 │   │   ├── ai.py
 │   │   ├── comment.py
@@ -177,6 +179,7 @@ backend/
 │   ├── services/
 │   │   ├── auth_service.py
 │   │   ├── project_service.py
+│   │   ├── room_service.py
 │   │   ├── issue_service.py
 │   │   ├── ai_service.py
 │   │   ├── comment_service.py
@@ -474,8 +477,6 @@ name: str
 hotel: dict
 ```
 
----
-
 ### ProjectListResponse
 
 ```python
@@ -484,7 +485,25 @@ projects: list[ProjectResponse]
 
 ---
 
-## 9.3 Issue DTO
+## 9.3 Room DTO
+
+### RoomResponse
+
+```python
+id: int
+room_number: str
+display_name: str | None
+```
+
+### RoomListResponse
+
+```python
+rooms: list[RoomResponse]
+```
+
+---
+
+## 9.4 Issue DTO
 
 ### CreateIssueRequest
 
@@ -564,7 +583,7 @@ attachments: list[AttachmentResponse]
 
 ---
 
-## 9.4 AI DTO
+## 9.5 AI DTO
 
 ### GenerateDraftRequest
 
@@ -587,7 +606,7 @@ description: str
 
 ---
 
-## 9.5 Comment DTO
+## 9.6 Comment DTO
 
 ### CreateCommentRequest
 
@@ -608,7 +627,7 @@ created_at: datetime
 
 ---
 
-## 9.6 Attachment DTO
+## 9.7 Attachment DTO
 
 ### AttachmentResponse
 
@@ -632,7 +651,7 @@ message: str
 
 ---
 
-## 9.7 DTO Design Policy
+## 9.8 DTO Design Policy
 
 DTO 設計では以下の方針を採用する。
 
@@ -658,6 +677,7 @@ Service Layer は業務ロジックを担当し、API RouterとRepository Layer 
 |---|---|
 |AuthService|認証処理|
 |ProjectService|Project 取得|
+|RoomService|Room 一覧取得|
 |IssueService|Issue 登録・更新・参照|
 |AIService|AI Draft 生成|
 |CommentService|Comment 追加・一覧取得|
@@ -718,7 +738,33 @@ validate_project_exists(project_id: int) -> None
 
 ---
 
-## 10.4 IssueService
+## 10.4 RoomService
+
+### Responsibilities
+
+- Hotel 存在確認
+- Hotel に属する Room 一覧取得
+- Room の DTO 変換
+
+### Main Methods
+
+```python
+list_rooms(hotel_id: int) -> RoomListResponse
+```
+
+`list_rooms()` は `HotelRepository.find_by_id(hotel_id)` を使用して
+指定された Hotel が存在することを確認した後、
+`RoomRepository.list_by_hotel(hotel_id)` を使用して Room 一覧を取得する。
+
+取得した Room は `RoomResponse` へ変換し、`RoomListResponse` として返す。
+
+一覧の並び順は `RoomRepository.list_by_hotel()` が返す順序を維持する。
+
+読み取り処理であるため commit は行わない。
+
+---
+
+## 10.5 IssueService
 
 ### Responsibilities
 
@@ -799,7 +845,7 @@ API Router は Repository を直接呼び出さず、ページング情報を生
 
 ---
 
-## 10.5 AIService
+## 10.6 AIService
 
 ### Responsibilities
 
@@ -842,7 +888,7 @@ AIService は SQLAlchemy Session を保持せず、commit および rollback を
 
 ---
 
-## 10.6 CommentService
+## 10.7 CommentService
 
 ### Responsibilities
 
@@ -880,7 +926,7 @@ Comment は編集・削除しない。
 
 ---
 
-## 10.7 AttachmentService
+## 10.8 AttachmentService
 
 ### Responsibilities
 
@@ -972,7 +1018,7 @@ Repository は commit および rollback を行わない。
 
 ---
 
-## 10.8 StorageService
+## 10.9 StorageService
 
 ### Responsibilities
 
@@ -1046,12 +1092,13 @@ Repository はデータアクセスのみを担当し、業務ロジックを持
 
 ## 11.1 Repository List
 
-初期版では、Hotel は Project とともに取得するため、専用の HotelRepository は定義しない。
+Hotel の存在確認が必要な処理では、HotelRepository を使用する。
 
 |Repository|責務|
 |---|---|
 |UserRepository|User 取得|
 |ProjectRepository|Project 取得（Hotel 情報を含む）|
+|HotelRepository|Hotel 取得|
 |RoomRepository|Room 取得|
 |IssueRepository|Issue 取得・登録・更新|
 |CommentRepository|Comment 登録・取得|
@@ -1079,7 +1126,15 @@ list_all() -> list[Project]
 
 ---
 
-## 11.4 RoomRepository
+## 11.4 HotelRepository
+
+```python
+find_by_id(hotel_id: int) -> Hotel | None
+```
+
+---
+
+## 11.5 RoomRepository
 
 ```python
 find_by_id(room_id: int) -> Room | None
@@ -1098,7 +1153,7 @@ list_by_hotel(hotel_id: int) -> list[Room]
 
 ---
 
-## 11.5 IssueRepository
+## 11.6 IssueRepository
 
 Repository は永続化した Entity を返却する。
 
@@ -1132,7 +1187,7 @@ update(issue: Issue) -> Issue
 
 ---
 
-## 11.6 CommentRepository
+## 11.7 CommentRepository
 
 ```python
 list_by_issue(issue_id: int) -> list[Comment]
@@ -1142,7 +1197,7 @@ create(comment: Comment) -> Comment
 
 ---
 
-## 11.7 AttachmentRepository
+## 11.8 AttachmentRepository
 
 ```python
 find_by_id(attachment_id: int) -> Attachment | None

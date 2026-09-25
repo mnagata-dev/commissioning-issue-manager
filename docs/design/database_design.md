@@ -840,10 +840,14 @@ Repository では業務ロジックを実装しない。
 
 各Aggregateごとに Repository を定義する。
 
-```text id="m31w9v"
+Hotel の存在確認が必要な処理では、HotelRepository を使用する。
+
+```text
 UserRepository
 
 ProjectRepository
+
+HotelRepository
 
 RoomRepository
 

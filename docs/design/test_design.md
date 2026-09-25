@@ -237,7 +237,17 @@ Repository は Mock 化し、業務ロジックのみを検証する。
 
 ---
 
-## 8.3 IssueService
+## 8.3 RoomService
+
+|テスト項目|内容|
+|---|---|
+|Room List|指定 Hotel の Room 一覧取得|
+|Empty Room List|Room が存在しない場合に空一覧を返すこと|
+|Hotel Not Found|存在しない Hotel|
+
+---
+
+## 8.4 IssueService
 
 |テスト項目|内容|
 |---|---|
@@ -260,7 +270,7 @@ Repository は Mock 化し、業務ロジックのみを検証する。
 
 ---
 
-## 8.4 AIService
+## 8.5 AIService
 
 |テスト項目|内容|
 |---|---|
@@ -273,7 +283,7 @@ Repository は Mock 化し、業務ロジックのみを検証する。
 
 ---
 
-## 8.5 CommentService
+## 8.6 CommentService
 
 |テスト項目|内容|
 |---|---|
@@ -283,7 +293,7 @@ Repository は Mock 化し、業務ロジックのみを検証する。
 
 ---
 
-## 8.6 AttachmentService
+## 8.7 AttachmentService
 
 |テスト項目|内容|
 |---|---|
@@ -388,7 +398,15 @@ FastAPI TestClient を利用する。
 
 ---
 
-## 10.3 Issue API
+## 10.3 Room API
+
+|API|テスト|
+|---|---|
+|Room List|正常・401・404・空一覧|
+
+---
+
+## 10.4 Issue API
 
 |API|テスト|
 |---|---|
@@ -400,7 +418,7 @@ FastAPI TestClient を利用する。
 
 ---
 
-## 10.4 AI API
+## 10.5 AI API
 
 |API|テスト|
 |---|---|
@@ -408,7 +426,7 @@ FastAPI TestClient を利用する。
 
 ---
 
-## 10.5 Comment API
+## 10.6 Comment API
 
 |API|テスト|
 |---|---|
@@ -417,7 +435,7 @@ FastAPI TestClient を利用する。
 
 ---
 
-## 10.6 Attachment API
+## 10.7 Attachment API
 
 |API|テスト|
 |---|---|
@@ -428,7 +446,7 @@ FastAPI TestClient を利用する。
 
 ---
 
-## 10.7 API Response Validation
+## 10.8 API Response Validation
 
 すべての API について以下を確認する。
 

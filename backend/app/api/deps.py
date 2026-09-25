@@ -13,6 +13,7 @@ from app.models.enums import Role
 from app.repositories import (
     AttachmentRepository,
     CommentRepository,
+    HotelRepository,
     IssueRepository,
     ProjectRepository,
     RoomRepository,
@@ -26,6 +27,7 @@ from app.services import (
     CommentService,
     IssueService,
     ProjectService,
+    RoomService,
     StorageService,
 )
 
@@ -59,6 +61,14 @@ def get_project_service(session: DatabaseSession) -> ProjectService:
 
 
 ProjectServiceDependency = Annotated[ProjectService, Depends(get_project_service)]
+
+
+def get_room_service(session: DatabaseSession) -> RoomService:
+    """Construct the room service for the current request."""
+    return RoomService(HotelRepository(session), RoomRepository(session))
+
+
+RoomServiceDependency = Annotated[RoomService, Depends(get_room_service)]
 
 
 def get_issue_service(session: DatabaseSession) -> IssueService:
@@ -138,5 +148,6 @@ __all__ = [
     "get_db_session",
     "get_issue_service",
     "get_project_service",
+    "get_room_service",
     "require_administrator",
 ]

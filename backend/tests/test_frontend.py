@@ -109,6 +109,7 @@ def test_javascript_modules_are_delivered() -> None:
                 "projects.js",
                 "issues.js",
                 "issue.js",
+                "issue-create.js",
             )
         ]
 
@@ -144,3 +145,16 @@ def test_api_routes_still_resolve_as_json() -> None:
         assert response.status_code == 401
         assert response.headers["content-type"].startswith("application/json")
         assert response.json()["error"]["code"] == "AUTHENTICATION_ERROR"
+
+
+def test_issue_create_page_is_delivered_and_excluded_from_openapi() -> None:
+    with make_client() as client:
+        response = client.get("/issue-create.html")
+        openapi_paths = client.get("/openapi.json").json()["paths"]
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/html")
+    assert "Issue Create" in response.text
+    assert 'id="issue-create-form"' in response.text
+    assert 'src="/js/issue-create.js"' in response.text
+    assert "/issue-create.html" not in openapi_paths

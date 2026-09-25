@@ -16,6 +16,7 @@ from app.api.routes import (
     comments_router,
     issues_router,
     projects_router,
+    rooms_router,
 )
 from app.core.config import Settings, settings
 from app.core.exceptions import ApplicationError, ValidationError
@@ -73,6 +74,7 @@ def create_app(application_settings: Settings = settings) -> FastAPI:
     )
     application.include_router(auth_router)
     application.include_router(projects_router)
+    application.include_router(rooms_router)
     application.include_router(issues_router)
     application.include_router(comments_router)
     application.include_router(attachments_router)
@@ -97,6 +99,11 @@ def create_app(application_settings: Settings = settings) -> FastAPI:
     def issue_page() -> FileResponse:
         """Return the Issue Detail page."""
         return FileResponse(FRONTEND_DIRECTORY / "issue.html")
+
+    @application.get("/issue-create.html", include_in_schema=False)
+    def issue_create_page() -> FileResponse:
+        """Return the Issue Create page."""
+        return FileResponse(FRONTEND_DIRECTORY / "issue-create.html")
 
     application.mount(
         "/css",
