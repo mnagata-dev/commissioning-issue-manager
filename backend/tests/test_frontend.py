@@ -110,6 +110,7 @@ def test_javascript_modules_are_delivered() -> None:
                 "issues.js",
                 "issue.js",
                 "issue-create.js",
+                "issue-edit.js",
             )
         ]
 
@@ -158,3 +159,18 @@ def test_issue_create_page_is_delivered_and_excluded_from_openapi() -> None:
     assert 'id="issue-create-form"' in response.text
     assert 'src="/js/issue-create.js"' in response.text
     assert "/issue-create.html" not in openapi_paths
+
+
+def test_issue_edit_page_is_delivered_and_excluded_from_openapi() -> None:
+    with make_client() as client:
+        response = client.get("/issue-edit.html?issue_id=101")
+        openapi_paths = client.get("/openapi.json").json()["paths"]
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/html")
+    assert 'id="issue-edit-form"' in response.text
+    for field in ("status", "target-type", "room", "target", "category", "description"):
+        assert f'id="{field}"' in response.text
+        assert f'id="{field}-error"' in response.text
+    assert 'src="/js/issue-edit.js"' in response.text
+    assert "/issue-edit.html" not in openapi_paths

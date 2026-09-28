@@ -105,6 +105,11 @@ def create_app(application_settings: Settings = settings) -> FastAPI:
         """Return the Issue Create page."""
         return FileResponse(FRONTEND_DIRECTORY / "issue-create.html")
 
+    @application.get("/issue-edit.html", include_in_schema=False)
+    def issue_edit_page() -> FileResponse:
+        """Return the Issue Edit page."""
+        return FileResponse(FRONTEND_DIRECTORY / "issue-edit.html")
+
     application.mount(
         "/css",
         StaticFiles(directory=FRONTEND_DIRECTORY / "css"),

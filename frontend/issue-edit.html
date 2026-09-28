@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Issue Edit | CIM</title>
+    <link rel="stylesheet" href="/css/style.css">
+  </head>
+  <body>
+    <main class="page-container">
+      <section class="card" aria-labelledby="edit-heading">
+        <header class="page-header">
+          <div>
+            <h1 id="edit-heading">Issue Edit | CIM</h1>
+            <p id="current-project" class="current-project"></p>
+            <p id="current-user" class="current-user"></p>
+          </div>
+          <button id="logout-button" class="secondary-button" type="button">Logout</button>
+        </header>
+        <p id="issue-loading" class="loading" role="status">読み込んでいます…</p>
+        <p id="issue-error" class="alert" role="alert" hidden></p>
+        <form id="issue-edit-form" novalidate>
+          <fieldset id="edit-fields" disabled>
+            <legend>Edit Issue</legend>
+            <div class="form-field">
+              <label for="status">Status</label>
+              <select id="status" name="status" required aria-describedby="status-error">
+                <option value="OPEN">OPEN</option>
+                <option value="IN_PROGRESS">IN_PROGRESS</option>
+                <option value="RESOLVED">RESOLVED</option>
+                <option value="CLOSED">CLOSED</option>
+              </select>
+              <p id="status-error" class="alert" hidden></p>
+            </div>
+            <div class="form-field">
+              <label for="target-type">Target Type</label>
+              <select id="target-type" name="target_type" required aria-describedby="target-type-error">
+                <option value="">選択してください</option>
+                <option value="ROOM">ROOM</option>
+                <option value="OTHER">OTHER</option>
+              </select>
+              <p id="target-type-error" class="alert" hidden></p>
+            </div>
+            <div id="room-field" class="form-field" hidden>
+              <label for="room">Room</label>
+              <select id="room" name="room_id" disabled aria-describedby="room-error room-empty">
+                <option value="">選択してください</option>
+              </select>
+              <p id="room-empty" class="empty-state" hidden>選択できる Room がありません。</p>
+              <p id="room-error" class="alert" hidden></p>
+            </div>
+            <div id="target-field" class="form-field" hidden>
+              <label for="target">Target</label>
+              <input id="target" name="target" type="text" disabled aria-describedby="target-error">
+              <p id="target-error" class="alert" hidden></p>
+            </div>
+            <div class="form-field">
+              <label for="category">Category</label>
+              <select id="category" name="category" required aria-describedby="category-error">
+                <option value="">選択してください</option>
+                <option value="LIGHTING">LIGHTING</option>
+                <option value="SHADE">SHADE</option>
+                <option value="KEYPAD">KEYPAD</option>
+                <option value="SENSOR">SENSOR</option>
+                <option value="TSTAT">TSTAT</option>
+                <option value="PROCESSOR">PROCESSOR</option>
+                <option value="NETWORK">NETWORK</option>
+                <option value="SERVER">SERVER</option>
+                <option value="INTEGRATION">INTEGRATION</option>
+                <option value="OTHER">OTHER</option>
+              </select>
+              <p id="category-error" class="alert" hidden></p>
+            </div>
+            <div class="form-field">
+              <label for="description">Description</label>
+              <textarea id="description" name="description" rows="5" required aria-describedby="description-error"></textarea>
+              <p id="description-error" class="alert" hidden></p>
+            </div>
+            <div class="detail-actions">
+              <button id="save-button" type="submit">Save</button>
+            </div>
+          </fieldset>
+        </form>
+        <a id="cancel-link" class="secondary-link" href="/issues.html">Cancel</a>
+      </section>
+    </main>
+    <script type="module" src="/js/issue-edit.js"></script>
+  </body>
+</html>
