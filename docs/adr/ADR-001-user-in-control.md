@@ -17,15 +17,22 @@ AIは入力負担を大幅に軽減できる一方、誤認識や誤分類を完
 
 AIは補助機能として利用し、業務データの最終決定は必ずユーザーが行う。
 
+音声入力の文字起こしは Local Speech Recognition がローカル環境で行い、結果を Voice / Text Input に表示する。ユーザーは文字起こし結果を必要に応じて修正できるが、確認または修正を独立した必須操作とはしない。
+
+ユーザーが Generate AI Draft を実行すると、AI は Voice / Text Input のテキスト（必要に応じて修正された文字起こし結果、またはユーザーが直接入力したテキスト）を解析する。AI は音声そのもの（raw audio）を解析しない。
+
 AIが実施する機能は以下とする。
 
-- 音声入力内容の解析
+- Voice / Text Input のテキストの解析
 - Categoryの推定
-- Descriptionの生成
+- 日本語のDescriptionの生成
+
+AIが生成する情報は Category および Description のみとする。
 
 AIは以下を実施しない。
 
 - TargetTypeの決定
+- Roomの決定
 - Targetの決定
 - Issue保存
 - Issue更新
@@ -35,7 +42,7 @@ AIは以下を実施しない。
 - RoomMaster更新
 - Project更新
 
-AIが生成した Category および Description は「AI Draft」として表示し、ユーザーが確認・修正した後に Issue として保存する。
+AIが生成した Category および Description は「AI Draft」として表示し、ユーザーが確認し、必要に応じて修正した後に Issue として登録する。AI は Issue を自動登録しない。
 
 ## Alternatives Considered
 
@@ -59,7 +66,7 @@ AIが生成した Category および Description は「AI Draft」として表�
 
 ### デメリット
 
-- ユーザーによる確認操作が必須となる。
+- ユーザーによる AI Draft の Category および Description の確認操作が必須となる。
 - 完全自動登録は行えない。
 
 ## Related Documents
