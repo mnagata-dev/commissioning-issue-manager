@@ -1,8 +1,8 @@
 # CIM Detailed Design
 
-- **Document Version:** 1.2
+- **Document Version:** 1.3
 - **Status:** Draft
-- **Last Updated:** 2026-07-09
+- **Last Updated:** 2026-09-29
 - **Author:** Masato Nagata
 
 ---
@@ -14,6 +14,7 @@
 |1.0|2026-06-30|Initial version|
 |1.1|2026-07-03|Synchronize with updated basic design and database design.|
 |1.2|2026-07-09|Align with Requirements v1.2, Database Design, API Design, and UI Design. Simplify Target Type, update AI Draft design, validation rules, and related service definitions.|
+|1.3|2026-09-29|Align with Requirements, Basic Design, API Design and UI Design v1.3, and updated ADR-001. Define Local Speech Recognition and SpeechService responsibilities separately from AI Draft generation.|
 
 ---
 
@@ -63,6 +64,7 @@
 - Error Handling
 - Authentication / Authorization
 - AI Service
+- Speech Service / Local Speech Recognition
 - File Storage
 
 以下は対象外とする。
@@ -127,6 +129,24 @@ Service
  └── Storage Service
 ```
 
+音声文字起こしと AI Draft 生成は、以下の独立したフローとする。
+
+```text
+Speech Transcription:
+Frontend → API Router → SpeechService → Local Speech Recognition
+
+AI Draft:
+Frontend → API Router → AIService → Ollama Client → Ollama
+```
+
+SpeechService は AIService を呼び出さない。文字起こし結果は Speech API のレスポンスとして Frontend に返し、既存の Voice / Text Input に表示する。
+
+ユーザーは文字起こし結果を必要に応じて修正するか、Voice / Text Input に直接テキストを入力する。文字起こし結果の確認・修正を独立した必須操作とはしない。
+
+ユーザーが Generate AI Draft を実行すると、Frontend は Voice / Text Input のテキストを既存の `POST /api/ai/issue-draft` に送信する。テキスト直接入力では Local Speech Recognition を経由しない。
+
+生成された Category と日本語 Description はユーザーが確認し、必要に応じて修正した後、Save により Issue を登録する。AI は Issue を自動登録しない（User in Control）。
+
 ---
 
 # 5. Backend Directory Structure
@@ -144,7 +164,8 @@ backend/
 │   │
 │   ├── clients/
 │   │   ├── __init__.py
-│   │   └── ollama_client.py
+│   │   ├── ollama_client.py
+│   │   └── speech_client.py
 │   │
 │   ├── api/
 │   │   ├── deps.py
@@ -154,6 +175,7 @@ backend/
 │   │       ├── rooms.py
 │   │       ├── issues.py
 │   │       ├── ai.py
+│   │       ├── speech.py
 │   │       ├── comments.py
 │   │       └── attachments.py
 │   │
@@ -173,6 +195,7 @@ backend/
 │   │   ├── room.py
 │   │   ├── issue.py
 │   │   ├── ai.py
+│   │   ├── speech.py
 │   │   ├── comment.py
 │   │   └── attachment.py
 │   │
@@ -182,6 +205,7 @@ backend/
 │   │   ├── room_service.py
 │   │   ├── issue_service.py
 │   │   ├── ai_service.py
+│   │   ├── speech_service.py
 │   │   ├── comment_service.py
 │   │   ├── attachment_service.py
 │   │   └── storage_service.py
@@ -279,6 +303,18 @@ API Router は業務ロジックを持たない。
 - Service 呼び出し
 - Response DTO の返却
 
+### Speech API Router
+
+`app/api/routes/speech.py` は `POST /api/speech/transcriptions` を担当する。
+
+- 既存の Authentication Dependency により認証済みリクエストを受け付ける。
+- `multipart/form-data` の `audio` を受け取る。
+- SpeechService を呼び出す。
+- transcription text を `SpeechTranscriptionResponse` として返す。
+- Service の例外は第13章の共通エラーハンドリング方針に従って扱う。
+
+Project、Target Type、Room、Target の決定、Category / Description および AI Draft の生成、Issue の登録・更新は行わない。
+
 ---
 
 ## 7.2 Service Layer
@@ -295,6 +331,8 @@ Service Layer は業務ロジックを担当する。
 - Domain Model と DTO の変換補助
 
 初期版では、1 API リクエストを 1 トランザクションとして処理する。
+
+ただし Speech Transcription は DB を利用せず、SpeechService に SQLAlchemy Session や Repository を必要としない。SpeechService は audio の基本的な検証、Local Speech Recognition の呼び出し、結果の検証、失敗時のアプリケーション例外への変換、および transcription text の返却を担当する（10.10参照）。
 
 ---
 
@@ -342,6 +380,20 @@ Core にはアプリケーション全体で利用する共通機能を配置す
 - Security
 - 共通例外
 - 共通エラー定義
+
+---
+
+## 7.7 Local Speech Recognition Boundary
+
+`app/clients/speech_client.py` は Local Speech Recognition との境界とし、SpeechService から利用する。
+
+- audio を受け取り、ローカル環境で文字起こしして text を返す。
+- 必要なモデルと実行環境はローカルで利用可能とし、インターネット接続および外部クラウドサービスを前提としない。
+- 具体的な音声認識技術との連携処理をこの境界に分離する。
+
+AI Draft の生成や業務データの保存は担当しない。技術固有の失敗は SpeechService でアプリケーション例外へ変換する。
+
+具体的な製品・ライブラリ、モデル、呼び出し方式は今回決定しない。ブラウザ録音 API、audio codec / sample rate / channel 数、変換方式、一時ファイル、実行・モデルパス、環境変数、timeout、concurrency / queue、性能調整、配布・配置方式も技術選定後に必要に応じて ADR または Detailed Design で決定する。
 
 ---
 
@@ -663,6 +715,26 @@ DTO 設計では以下の方針を採用する。
 
 ---
 
+## 9.9 Speech Transcription Schema
+
+### Request
+
+`POST /api/speech/transcriptions` の入力は JSON DTO ではなく、`multipart/form-data` の必須 File フィールド `audio` とする。
+
+API Router は FastAPI の `UploadFile` として受け取り、SpeechService に渡す。audio の必須検証およびエラーの扱いは 12.8 に従う。
+
+### SpeechTranscriptionResponse
+
+`app/schemas/speech.py` に以下の Pydantic Response DTO を定義する。
+
+```python
+text: str
+```
+
+レスポンスは文字起こし結果の `text` のみとし、Category / Description 等は含めない。
+
+---
+
 # 10. Service Design
 
 本章では、Service Layer の設計を定義する。
@@ -680,6 +752,7 @@ Service Layer は業務ロジックを担当し、API RouterとRepository Layer 
 |RoomService|Room 一覧取得|
 |IssueService|Issue 登録・更新・参照|
 |AIService|AI Draft 生成|
+|SpeechService|Local Speech Recognition による文字起こしの制御|
 |CommentService|Comment 追加・一覧取得|
 |AttachmentService|Attachment 追加・一覧取得・ダウンロード・削除|
 |StorageService|添付ファイル保存・取得・削除|
@@ -854,7 +927,7 @@ API Router は Repository を直接呼び出さず、ページング情報を生
 - Room 存在確認および Project の Hotel との整合性検証
 - 入力テキストの検証
 - Ollama Client 呼び出し
-- Category および Description の AI Draft 生成
+- Category および日本語 Description の AI Draft 生成
 - AI 結果の検証
 - AI が Target Type、Room および Target を返却しないことの制御
 - Ollama 処理失敗時の `AIServiceError` への変換
@@ -868,7 +941,9 @@ generate_issue_draft(
 ) -> GenerateDraftResponse
 ```
 
-AIService は Issue を保存しない。
+AIService は Issue を保存・更新しない。
+
+入力は Voice / Text Input のテキストとする。Local Speech Recognition による文字起こし結果をユーザーが必要に応じて修正したもの、または直接入力したものを受け取る。raw audio は受け取らず、Local Speech Recognition を呼び出さない。
 
 `generate_issue_draft()` では、Project の存在、Target Type と Room / Target の整合性、および入力テキストを検証してから Ollama Client を呼び出す。
 
@@ -1079,6 +1154,38 @@ class StoredFile:
 `file_path` は Storage Root からの相対パスとする。
 
 `StoredFile` は API の公開 DTO として使用しない。
+
+---
+
+## 10.10 SpeechService
+
+### Responsibilities
+
+- audio が存在することの確認と基本的な入力検証
+- Local Speech Recognition boundary の呼び出し
+- transcription result の取得
+- transcription text が利用可能であることの確認
+- Speech Recognition failure の `SpeechRecognitionError` への変換
+- transcription text の返却
+
+### Main Methods
+
+```python
+transcribe_audio(audio: UploadFile) -> SpeechTranscriptionResponse
+```
+
+`transcribe_audio()` は audio を検証してから Local Speech Recognition boundary を呼び出し、取得した text を検証して `SpeechTranscriptionResponse` として返す。Validation は 12.8、例外の HTTP 対応は 13.5 に従う。
+
+SpeechService は以下を行わない。
+
+- AIService の呼び出し
+- AI Draft および Category / Description の生成
+- Project、Target Type、Room、Target の決定
+- Issue の登録・更新
+- DB への保存
+- audio および transcription text の業務データとしての永続化
+
+SQLAlchemy Session および Repository には依存せず、commit / rollback は行わない。認証は API Layer の既存 Dependency が担当する。
 
 ---
 
@@ -1326,6 +1433,21 @@ Comment 追加時には以下を検証する。
 
 ---
 
+## 12.8 Speech Transcription Validation
+
+|対象|Validation|
+|---|---|
+|audio|必須の File 入力が存在すること|
+|transcription text|文字列として取得でき、空ではなく利用可能であること|
+
+SpeechService は audio の基本的な検証を担当し、不正な audio は `ValidationError` とする。multipart の `audio` 欠落など、Service 呼び出し前に検出する入力不正も API Layer で共通エラーレスポンスの `400` として扱う。
+
+Local Speech Recognition の処理失敗、または利用可能な transcription text を取得できない場合は `SpeechRecognitionError` とする。
+
+audio の MIME Type、拡張子、録音時間、ファイルサイズ上限などの具体的な制約は今回決定しない。Attachment の Validation を audio に適用しない。
+
+---
+
 # 13. Error Handling Design
 
 本章では、Backend で利用するエラー処理方針を定義する。
@@ -1344,6 +1466,7 @@ Comment 追加時には以下を検証する。
 |NotFoundError|対象データなし|
 |BusinessRuleError|業務ルール違反|
 |AIServiceError|AI 処理失敗|
+|SpeechRecognitionError|音声認識処理失敗または利用可能な文字起こし結果を取得できない場合|
 |StorageError|ファイル保存・削除失敗|
 
 ---
@@ -1358,6 +1481,7 @@ Comment 追加時には以下を検証する。
 |NotFoundError|404|
 |BusinessRuleError|409|
 |AIServiceError|500|
+|SpeechRecognitionError|500|
 |StorageError|500|
 
 ---
@@ -1382,6 +1506,20 @@ API では共通エラーレスポンス形式を返す。
 - ユーザーに理解できるメッセージを返す。
 - システム内部情報を返さない。
 - 詳細な例外情報はログへ記録する。
+
+---
+
+## 13.5 Speech Transcription Error Handling
+
+|エラー|Application Exception|HTTP Status|
+|---|---|---|
+|invalid audio|ValidationError|400|
+|unauthenticated|AuthenticationError|401|
+|speech recognition failure|SpeechRecognitionError|500|
+
+SpeechService は Local Speech Recognition の処理失敗を `SpeechRecognitionError` に変換する。具体的な製品・ライブラリ固有の例外を API へ公開しない。
+
+共通エラーレスポンス形式およびメッセージ方針に従い、音声認識の失敗は AI Draft 生成の失敗と区別する。
 
 ---
 
@@ -1480,6 +1618,7 @@ Role に応じて利用可能な機能を制御する。
 |---|---|---|
 |Project Selection|Yes|Yes|
 |Issue Management|Yes|Yes|
+|Speech Transcription|Yes|Yes|
 |AI Draft|Yes|Yes|
 |Comment Management|Yes|Yes|
 |Attachment Management|Yes|Yes|
@@ -1612,11 +1751,11 @@ Session が無効となった場合も同様とする。
 
 AIService は Ollama を呼び出し、Issue Draft を生成する。
 
-AIService は Category および Description を生成する。
+AIService は Voice / Text Input のテキストを解析し、Category および日本語 Description のみを生成する。raw audio を受け取らず、Local Speech Recognition を呼び出さない。
 
 Target Type、Room および Target は生成しない。
 
-AIService は業務データを保存しない。
+AIService は業務データを保存・更新しない。生成結果はユーザーが確認し、必要に応じて修正してから Issue を登録する。
 
 ---
 
@@ -1630,7 +1769,7 @@ AI Draft 生成時には以下を入力とする。
 |target_type|Target Type|
 |room_id|ROOM の場合に指定する Room|
 |target|OTHER の場合に指定する対象名|
-|input_text|音声認識後または手入力されたテキスト|
+|input_text|Voice / Text Input のテキスト（Local Speech Recognition の文字起こし結果を必要に応じてユーザーが修正したもの、または直接入力したもの）|
 
 ---
 
@@ -1641,7 +1780,7 @@ AI Draft は以下を返却する。
 |項目|説明|
 |---|---|
 |category|Category|
-|description|Issue 内容|
+|description|日本語の Issue 内容|
 
 ---
 
@@ -1654,7 +1793,7 @@ System Message では以下を明示する。
 - CIM の Issue Draft 生成支援であること。
 - 出力は Category と Description のみとすること。
 - Category は定義済み Category のいずれかとすること。
-- Description は入力内容を自然な Issue 文へ整形すること。
+- Description は入力内容を日本語の自然な Issue 文へ整形すること。
 - 入力に存在しない事実を追加しないこと。
 - Target Type、Room および Target を推定または変更しないこと。
 - AI は Issue を保存しないこと。
@@ -1753,6 +1892,12 @@ Ollama が返した Message Content は Pydantic で検証してから `Generate
 添付ファイル本体は Local Storage へ保存する。
 
 DB には添付ファイルのメタデータのみ保存する。
+
+Speech audio および transcription text は、Issue、Attachment 等の業務データとして永続化しない。Speech audio の保存に Attachment の StorageService や本章の保存方式を流用しない。
+
+Speech audio、transcription および AI Draft 用の Table / Column / Migration は追加しない。ユーザーが確認した AI Draft の内容を既存の Issue 登録処理で保存する流れは維持する。
+
+音声認識実装内部で一時ファイルが必要かどうか、およびその方式は今回決定しない。
 
 ---
 
