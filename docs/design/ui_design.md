@@ -1,8 +1,8 @@
 # CIM UI Design
 
-- **Document Version:** 1.2
+- **Document Version:** 1.3
 - **Status:** Draft
-- **Last Updated:** 2026-07-09
+- **Last Updated:** 2026-09-29
 - **Author:** Masato Nagata
 
 ---
@@ -14,6 +14,7 @@
 |1.0|2026-06-30|Initial version|
 |1.1|2026-07-03|Reflect updated login specification and master data terminology.|
 |1.2|2026-07-09|Align UI design with Requirements v1.2. Simplify Target Type to ROOM and OTHER, clarify AI Draft workflow, add validation rules, and improve Issue Detail and Issue Edit screens.|
+|1.3|2026-09-29|Align UI design with Requirements v1.3, Basic Design v1.3, and API Design v1.3 for local voice transcription, Voice / Text Input, and the AI Draft workflow.|
 
 ---
 
@@ -662,8 +663,13 @@ Description
 
 AI Draft
 
-Input
+[ Voice Input ]
 
+Voice / Text Input
+
++--------------------------------------+
+| 文字起こし結果または直接入力テキスト   |
+| (編集可能)                           |
 +--------------------------------------+
 
 [ Generate AI Draft ]
@@ -673,6 +679,10 @@ Input
 [ Save ]
 [ Cancel ]
 ```
+
+Voice Input によるローカル文字起こし結果は Voice / Text Input に表示する。ユーザーは同じ入力欄で必要に応じて修正するか、直接テキストを入力し、Generate AI Draft を実行する。
+
+生成結果は上部の Category / Description に反映し、ユーザーが確認・必要に応じて修正した後、Save で Issue を登録する。詳細な操作の流れは 12.5 AI Draft Flow に従う。
 
 ---
 
@@ -686,6 +696,8 @@ Input
 |Category|Category 選択|
 |Description|詳細説明|
 |AI Draft|AI 入力支援|
+|Voice Input|音声入力を開始するための操作|
+|Voice / Text Input|ローカル文字起こし結果を表示、またはユーザーが直接テキストを入力する。ユーザーが編集可能。|
 
 ---
 
@@ -693,9 +705,14 @@ Input
 
 |操作|内容|
 |---|---|
-|Generate AI Draft|AI Draft を生成する。|
+|Voice Input|音声入力を開始し、Frontend から音声を送信する。Local Speech Recognition による文字起こし結果を Voice / Text Input に表示し、ユーザーが必要に応じて修正できる。|
+|Generate AI Draft|Voice / Text Input のテキストから AI Draft を生成する。|
 |Save|Issue を登録する。|
 |Cancel|登録を中止する。|
+
+音声認識処理中は、ユーザーが処理中であることを認識できる表示とする。
+
+音声認識はローカル環境で行い、インターネット接続および外部クラウドサービスを前提としない。
 
 ---
 
@@ -704,11 +721,32 @@ Input
 1. ユーザーが Target Type を選択する。
 2. Target Type が ROOM の場合は Room を選択する。
 3. Target Type が OTHER の場合は Target を入力する。
-4. ユーザーが音声またはテキストを入力する。
-5. 「 Generate AI Draft 」を押下する。
-6. AI が入力内容を解析し、Category および Description を生成する。
-7. ユーザーが生成結果を確認・修正する。
-8. 「 Save 」を押下して Issue を登録する。
+
+入力方法ごとの流れを以下に示す。
+
+```text
+音声入力:
+Voice Input → 音声 → Local Speech Recognition → text → Voice / Text Input
+                                                        (必要に応じて修正)
+
+テキスト入力:
+ユーザー入力 → Voice / Text Input
+```
+
+テキスト直接入力では Local Speech Recognition を経由しない。
+
+文字起こし結果の確認・修正は既存の Voice / Text Input で行い、独立した確認画面や必須確認操作は設けない。
+
+入力後は以下の共通フローとする。
+
+1. ユーザーが「 Generate AI Draft 」を押下する。
+2. AI が Voice / Text Input のテキストを解析し、Category と日本語の Description を生成する。
+3. ユーザーが Category / Description を確認し、必要に応じて修正する。
+4. ユーザーが「 Save 」を押下して Issue を登録する。
+
+AI は音声そのものを解析せず、Target Type、Room、Target を決定しない。
+
+AI Draft は入力支援であり、Issue を自動登録しない。最終的な登録内容はユーザーが決定する（User in Control）。
 
 ## 12.6 Validation
 
@@ -950,6 +988,20 @@ Description を入力してください。
 AI Draft の生成に失敗しました。
 
 入力内容を確認して再度実行してください。
+```
+
+---
+
+## 15.7 Speech Recognition Error
+
+音声認識に失敗した場合は、AI Draft の生成エラーと区別し、ユーザーが理解できるエラーメッセージを表示する。
+
+例：
+
+```text
+音声の文字起こしに失敗しました。
+
+再度音声入力を行うか、Voice / Text Input にテキストを入力してください。
 ```
 
 ---
