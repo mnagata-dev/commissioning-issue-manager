@@ -1,8 +1,8 @@
 # CIM Requirements Specification
 
-- **Document Version:** 1.2
+- **Document Version:** 1.3
 - **Status:** Draft
-- **Last Updated:** 2026-07-08
+- **Last Updated:** 2026-09-29
 - **Author:** Masato Nagata
 
 ---
@@ -14,6 +14,7 @@
 |1.0|2026-06-30|Initial version|
 |1.1|2026-07-03|Reflect updated login specification and master data terminology.|
 |1.2|2026-07-08|Refine the system architecture, clarify the domain model, redefine AI responsibilities, and improve the document as the primary design specification for the project.|
+|1.3|2026-09-29|Clarify offline operation, local voice transcription, and Japanese Description generation.|
 
 ---
 
@@ -469,7 +470,7 @@ AI Draft は Issue 登録時の入力支援機能である。
 
 利用者は音声入力またはテキスト入力を行い、AI Draft を生成する。
 
-AI は入力内容を整理し、Issue Draft を作成する。
+AI Draft は、7.16 Voice Input の文字起こし結果または利用者が直接入力したテキストを基に生成する。
 
 利用者は AI Draft を確認し、必要に応じて修正した後に登録する。
 
@@ -483,6 +484,8 @@ AI は以下の情報を生成する。
 
 - Category
 - Description
+
+AI Draft が生成する Description は日本語とする。
 
 AI は以下を決定しない。
 
@@ -602,6 +605,18 @@ Issue の対応履歴を追跡できるようにする。
 
 ---
 
+## 7.16 Voice Input
+
+音声入力を利用する場合、入力された音声をローカル環境で文字起こしする。
+
+文字起こし結果は既存の Voice / Text Input に表示する。
+
+利用者は文字起こし結果を必要に応じて修正できる。
+
+文字起こし結果の確認または修正は、独立した必須操作としない。
+
+---
+
 # 8. Non-functional Requirements
 
 ## 8.1 Performance
@@ -616,7 +631,11 @@ AI Draft は AI の応答時間に依存するが、利用者に処理中であ�
 
 初期版はローカルネットワーク内で利用する。
 
-クラウドサービスへの常時接続を前提としない。
+インターネット接続がない環境でも主要機能を利用できること。
+
+Issue 管理、Attachment 管理、AI Draft および音声認識は、外部クラウドサービスを必須としない。
+
+AI Draft および音声認識に必要なモデルと実行環境は、ローカル環境で利用可能とする。
 
 ---
 
@@ -843,7 +862,7 @@ AI は利用者の代わりに判断するものではない。
 
 AI は以下を担当する。
 
-- 音声入力の解析
+- 音声入力の文字起こし結果の解析
 - テキスト入力の解析
 - Category の提案
 - Description の生成
@@ -944,7 +963,6 @@ AI は必須機能ではなく、入力支援機能である。
 - Statistics
 - Advanced Search
 - Notification
-- Offline Support
 - Multi-language Support
 - Dark Mode
 - Tablet Optimized UI

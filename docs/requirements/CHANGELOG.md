@@ -20,6 +20,8 @@
 |---|---|---|
 |1.0|2026-06-30|Initial version|
 |1.1|2026-07-03|Reflect reviewed requirements changes|
+|1.2|2026-07-08|Refine the system architecture, clarify the domain model, redefine AI responsibilities, and improve the document as the primary design specification for the project.|
+|1.3|2026-09-29|Clarify offline operation, local voice transcription, and Japanese Description generation.|
 
 ---
 
@@ -118,6 +120,29 @@
 - 初期版の Master Data から Location を削除した。
 - AI が Room、Target Type、Target を推定する要件を削除した。
 - 初期版の Target Type から ROOM_TYPE、AREA、HOTEL、GENERAL を削除した。
+
+---
+
+## Version 1.3
+
+### Added
+
+- インターネット接続がない現場での利用のため、初期版の Offline Operation 要件を追加した。Issue 管理、Attachment 管理、AI Draft および音声認識は外部クラウドサービスを必須とせず、AI Draft および音声認識に必要なモデルと実行環境をローカル環境で利用可能とする。
+- Voice Input 要件を追加した。音声はローカル環境で文字起こしし、結果を既存の Voice / Text Input に表示する。利用者は必要に応じて修正できるが、確認または修正を独立した必須操作にはしない。
+- AI Draft が生成する Description は日本語とする要件を追加した。
+
+---
+
+### Changed
+
+- AI Draft の入力が、文字起こし結果または利用者が直接入力したテキストであることを明確化した。
+- Category / Description を利用者が確認し、必要に応じて修正してから Issue を登録する既存の User in Control 方針は維持する。
+
+---
+
+### Removed
+
+- Offline Operation を初期版の要件として定義したため、将来拡張の Offline Support を削除した。
 
 ---
 
