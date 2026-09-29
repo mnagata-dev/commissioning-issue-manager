@@ -1,8 +1,8 @@
 # CIM Test Design
 
-- **Document Version:** 1.2
+- **Document Version:** 1.3
 - **Status:** Draft
-- **Last Updated:** 2026-07-14
+- **Last Updated:** 2026-09-29
 - **Author:** Masato Nagata
 
 ---
@@ -14,6 +14,7 @@
 |1.0|2026-06-30|Initial version|
 |1.1|2026-07-03|Update authentication and master data related test cases.|
 |1.2|2026-07-14|Align test design with Requirements v1.2, API Design, UI Design, and Detailed Design. Add validation, AI Draft, attachment, and business rule test cases.|
+|1.3|2026-09-29|Add Local Speech Recognition / Speech Transcription tests, separation from AI Draft, Japanese Description, and User in Control coverage.|
 
 ---
 
@@ -58,6 +59,7 @@
 - API Test
 - UI Test
 - AI Test
+- Local Speech Recognition / Speech Transcription Test
 - File Upload Test
 - Error Handling Test
 - Authorization Test
@@ -86,6 +88,7 @@
 |ui_design.md|UI 設計書|
 |detailed_design.md|詳細設計書|
 |project_conventions.md|プロジェクト共通ルール|
+|ADR-001-user-in-control.md|User in Control の設計判断|
 
 ---
 
@@ -96,6 +99,8 @@
 CIM では、Service Layer と API を中心にテストする。
 
 初期版では、自動テストと手動テストを併用する。
+
+Local Speech Recognition / Speech Transcription は AI Draft と独立した機能として検証する。具体的な音声認識製品・モデルの精度評価、および実モデルの品質・精度・性能の新たな合否基準は本変更の対象外とする。
 
 ---
 
@@ -124,6 +129,22 @@ CIM では、Service Layer と API を中心にテストする。
 - username にメールアドレス形式を利用できること
 
 UI の詳細操作は初期版では手動テストを中心とする。
+
+Speech の Service / API 自動テストでは Local Speech Recognition boundary を Mock / Stub に置き換える。UI 自動テストを行う場合は API を Mock 化して画面フローを検証し、実際の microphone や Speech Recognition engine を必須としない。具体的なブラウザ録音 API や engine 固有のテスト方法は定義しない。
+
+---
+
+## 4.4 Offline Operation
+
+Requirements 8.2 および Basic Design の Offline Operation に従い、以下を確認する。
+
+|テスト項目|内容|
+|---|---|
+|Local Dependencies|設計・実装の確認により、Speech Transcription と AI Draft が外部クラウドサービスを必須とせず、必要なモデルと実行環境をローカルで利用すること|
+|Automated Boundary Test|Mock / Stub を利用し、Speech と AI の独立した呼び出し・応答フローを自動テストで確認すること|
+|Offline Manual Test|実装とローカル実行環境の準備後、インターネット接続のない環境で Speech Transcription と AI Draft の主要機能を利用できることを実機・手動で確認すること|
+
+Mock / Stub のテストのみでは実環境のオフライン動作を確認済みとしない。具体的な runtime、executable、model、ネットワーク遮断手順は固定しない。
 
 ---
 
@@ -272,6 +293,8 @@ Repository は Mock 化し、業務ロジックのみを検証する。
 
 ## 8.5 AIService
 
+テキスト入力、SpeechService との責務分離、日本語 Description、および User in Control は12章、非永続化は10.10も確認する。
+
 |テスト項目|内容|
 |---|---|
 |Generate Draft|正常生成|
@@ -312,6 +335,23 @@ Repository は Mock 化し、業務ロジックのみを検証する。
 |Upload Compensation|DB 登録失敗時に保存済みファイルを削除すること|
 |Delete Staging|削除時に物理ファイルを `.trash/` へ一時退避してから DB 情報を削除すること|
 |Delete Restore|DB 削除失敗時に `.trash/` のファイルを元の場所へ復元すること|
+
+---
+
+## 8.8 SpeechService
+
+Local Speech Recognition boundary を Mock / Stub 化し、Detailed Design 10.10、12.8、13.5 に従って検証する。SpeechService のテストに DB / Repository / SQLAlchemy Session は不要とする。
+
+|テスト項目|内容|
+|---|---|
+|Transcribe Audio|有効な audio を受け取り、Local Speech Recognition boundary を呼び出し、取得した transcription text を SpeechTranscriptionResponse の text として返すこと|
+|Invalid Audio|audio が不正または利用できない場合、ValidationError とし、認識処理を呼び出さないこと|
+|Recognition Failure|Local Speech Recognition の処理失敗を SpeechRecognitionError に変換すること|
+|Unavailable Text|文字列でない、空、または利用可能な transcription text を取得できない場合、SpeechRecognitionError とすること|
+|Responsibility Separation|AIService を呼び出さず、Category / Description を生成しないこと|
+|No Target Decision|Project / Target Type / Room / Target を決定しないこと|
+|No Persistence Dependency|DB / Repository / SQLAlchemy Session に依存せず、commit / rollback を行わないこと|
+|No Business Side Effects|Issue を登録・更新せず、audio / transcription text を業務データとして永続化しないこと（10.10参照）|
 
 ---
 
@@ -460,6 +500,36 @@ FastAPI TestClient を利用する。
 
 ---
 
+## 10.9 Speech Transcription API
+
+`POST /api/speech/transcriptions` を対象とし、Local Speech Recognition boundary を Mock / Stub 化して検証する。
+
+|テスト項目|内容|
+|---|---|
+|Transcribe Speech|認証済みユーザーが multipart/form-data の audio File を送信した場合、HTTP 200 と transcription text のみを含む `{"text": "ロビーの照明が点滅している"}` 形式のレスポンスを返すこと|
+|Response Fields|Category / Description 等の AI Draft データがレスポンスに含まれないこと|
+|Invalid Audio|不正な audio で 400 を返すこと。必須 audio 欠落など Service 呼び出し前の入力不正も共通エラーレスポンスの 400 とすること|
+|Unauthenticated|未認証で 401 を返すこと|
+|Recognition Failure|音声認識処理失敗、または利用可能な transcription text を取得できない場合に 500 を返すこと|
+|No Issue Mutation|Speech API の呼び出しだけでは Issue を登録・更新しないこと（10.10参照）|
+
+---
+
+## 10.10 Persistence / Side Effects
+
+Speech Transcription および AI Draft の呼び出し前後で、テスト用 SQLite の業務データを比較する。認識・生成の外部境界は Mock / Stub 化し、正常系・異常系の双方で以下を確認する。
+
+|テスト項目|内容|
+|---|---|
+|Speech No Issue Mutation|Speech Transcription によって Issue が登録されず、既存 Issue の内容・更新日時も変化しないこと|
+|Speech No Attachment|Speech audio 用の Attachment が登録されず、Attachment の保存処理も呼び出されないこと|
+|Speech No Business Data|audio / transcription text が Issue / Attachment 等の業務データとして永続化されず、Speech 用の business data が DB に追加されないこと|
+|AI Draft No Issue Mutation|AI Draft の生成だけでは Issue が登録・更新されないこと|
+
+既存 Database Design の schema を利用し、Speech audio / transcription / AI Draft 用の Table / Column / Migration は前提としない。音声認識内部の一時ファイルの有無や削除方式はテスト条件として定義しない。ユーザーが確認した内容を既存の Issue 登録処理で保存することは、非永続化の対象外とする。
+
+---
+
 # 11. UI Test
 
 本章では、画面操作に関するテストを定義する。
@@ -538,7 +608,17 @@ FastAPI TestClient を利用する。
 |Required Fields|Target Type、Category、Description が未入力の場合にエラーが表示されること|
 |ROOM Validation|Target Type = ROOM の場合、Room 未選択でエラーとなること|
 |OTHER Validation|Target Type = OTHER の場合、Target 未入力でエラーとなること|
-|AI Draft|AI Draft を生成できること|
+|AI Draft|Voice / Text Input のテキストから Category と日本語 Description を生成できること|
+|Voice Input|Voice Input から audio を POST /api/speech/transcriptions に送信できること|
+|Transcription Display|返却された transcription text が既存の Voice / Text Input に表示されること|
+|Transcription Edit|同じ入力欄で transcription text をユーザーが編集できること|
+|No Mandatory Transcription Confirmation|独立した必須確認画面・必須確認操作を要求せず、修正しない場合も Generate AI Draft を実行できること|
+|Generate Edited Draft|ユーザーの Generate AI Draft 操作で、編集後の Voice / Text Input のテキストを input_text として POST /api/ai/issue-draft に送信すること。raw audio を渡さないこと|
+|Direct Text Input|テキスト直接入力では Speech Transcription を呼び出さず AI Draft を生成できること|
+|Speech Processing|Speech Recognition の処理中表示を確認すること|
+|Separate Errors|Speech Recognition Error と AI Draft Error を区別して表示すること|
+|User in Control|AI Draft の Category / Description を確認し、必要に応じて修正してから Save で Issue を登録できること。音声認識・AI Draft 生成だけでは登録されないこと|
+|Target Unchanged|ユーザーが指定した Target Type / Room / Target を AI が推定・変更しないこと|
 
 ---
 
@@ -558,6 +638,8 @@ FastAPI TestClient を利用する。
 
 本章では、AI Draft 機能のテストを定義する。
 
+6.1 の Ollama または Mock を利用する方針を維持し、Service 自動テストでは Ollama を Mock 化する。日本語 Description は、Prompt に日本語生成の指示があることと、日本語の Mock 応答が返却・表示されることを確認する。実モデルの品質・精度・性能に新たな合否基準は設けない。
+
 ---
 
 ## 12.1 Normal Case
@@ -565,7 +647,11 @@ FastAPI TestClient を利用する。
 |テスト項目|内容|
 |---|---|
 |Generate Draft|AI Draft が生成されること|
-|Description|Description が生成されること|
+|Description|Description が日本語で生成されること|
+|Text Input|AIService が Voice / Text Input のテキスト（必要に応じて修正した文字起こし結果、または直接入力したテキスト）を受け取ること|
+|No Speech Processing|AIService に raw audio を渡さず、AIService が Local Speech Recognition を呼び出さないこと|
+|Output Only|生成結果が Category と Description のみであること|
+|Target Unchanged|Target Type / Room / Target を推定・変更しないこと|
 |Category|Category が生成されること|
 |Target Type Not Returned|Target Type がレスポンスに含まれないこと|
 |Room Not Returned|Room がレスポンスに含まれないこと|
@@ -586,7 +672,7 @@ FastAPI TestClient を利用する。
 
 ## 12.3 User Confirmation
 
-AI Draft は保存されず、ユーザーが確認・修正した後に Issue を登録できることを確認する。
+AI Draft の生成だけでは Issue を登録・更新せず、ユーザーが Category / 日本語 Description を確認し、必要に応じて修正した後、Save により Issue を登録できることを確認する（10.10、11.5参照）。
 
 ---
 
@@ -744,9 +830,23 @@ AI Draft は保存されず、ユーザーが確認・修正した後に Issue �
 
 ---
 
+## 14.7 Speech Transcription Error
+
+|テスト項目|例外|HTTP Status|
+|---|---|---|
+|Invalid Audio|ValidationError|400|
+|Unauthenticated|AuthenticationError|401|
+|Speech Recognition Failure|SpeechRecognitionError|500|
+
+利用可能な transcription text を取得できない場合も SpeechRecognitionError とする。共通エラーレスポンス形式に従い、Speech Recognition Error と AI Draft Error（AIServiceError）を別のエラーとして扱い、画面上でも区別することを確認する。具体的な製品固有の例外はテスト仕様に持ち込まない。
+
+---
+
 # 15. Authorization Test
 
 本章では、認可に関するテストを定義する。
+
+Speech Transcription は認証を必要とし、ENGINEER / ADMINISTRATOR の双方が利用できることを確認する。
 
 ---
 
@@ -756,6 +856,7 @@ AI Draft は保存されず、ユーザーが確認・修正した後に Issue �
 
 - Project Selection / Project API
 - Issue Management
+- Speech Transcription
 - AI Draft
 - Comment
 - Attachment
@@ -769,6 +870,7 @@ AI Draft は保存されず、ユーザーが確認・修正した後に Issue �
 
 - Project Selection / Project API
 - Issue Management
+- Speech Transcription
 - AI Draft
 - Comment
 - Attachment
