@@ -1,8 +1,8 @@
 # CIM API Design
 
-- **Document Version:** 1.2
+- **Document Version:** 1.3
 - **Status:** Draft
-- **Last Updated:** 2026-07-08
+- **Last Updated:** 2026-09-29
 - **Author:** Masato Nagata
 
 ---
@@ -14,6 +14,7 @@
 |1.0|2026-06-30|Initial version|
 |1.1|2026-07-03|Update authentication specification and login ID policy.|
 |1.2|2026-07-08|Align API design with Requirements v1.2. Simplify Target Type to ROOM and OTHER, clarify AI responsibilities, and update Issue APIs.|
+|1.3|2026-09-29|Align API design with Requirements v1.3 and Basic Design v1.3 for offline operation, local voice transcription, and Japanese Description generation.|
 
 ---
 
@@ -26,14 +27,16 @@
 5. Common API Design
 6. Authentication API
 7. Project API
-8. Issue API
-9. AI Draft API
-10. Comment API
-11. Attachment API
-12. Error Response
-13. Authorization
-14. API Constraints
-15. Future Enhancements
+8. Room API
+9. Issue API
+10. Speech Transcription API
+11. AI Draft API
+12. Comment API
+13. Attachment API
+14. Error Response
+15. Authorization
+16. API Constraints
+17. Future Enhancements
 
 ---
 
@@ -102,6 +105,7 @@
 |Issue|POST|/api/projects/{project_id}/issues|Issue 登録|
 |Issue|PUT|/api/issues/{issue_id}|Issue更新|
 |Issue|PATCH|/api/issues/{issue_id}/status|Status 変更|
+|Speech|POST|/api/speech/transcriptions|音声をローカルで文字起こしする。|
 |AI|POST|/api/ai/issue-draft|AI Draft生成|
 |Comment|POST|/api/issues/{issue_id}/comments|Comment 追加|
 |Attachment|POST|/api/issues/{issue_id}/attachments|Attachment 追加|
@@ -127,7 +131,7 @@
 
 リクエストおよびレスポンスは原則として JSON 形式とする。
 
-ただし、Attachment Upload は `multipart/form-data` を利用する。
+ただし、Attachment Upload および Speech Transcription のリクエストは `multipart/form-data` を利用する。
 
 ---
 
@@ -169,7 +173,7 @@ Session が存在しない場合、Session に `user_id` が存在しない場�
 
 エラー時は共通エラーレスポンス形式を返す。
 
-詳細は「 12. Error Response 」で定義する。
+詳細は「 14. Error Response 」で定義する。
 
 ---
 
@@ -674,9 +678,63 @@ Issue の Status を変更する。
 
 ---
 
-# 10. AI Draft API
+# 10. Speech Transcription API
 
-## 10.1 Generate AI Draft
+## 10.1 Transcribe Speech
+
+### Endpoint
+
+```http
+POST /api/speech/transcriptions
+```
+
+### Description
+
+Frontend から受け取った音声を Local Speech Recognition で文字起こしし、結果のテキストのみを返却する。
+
+音声認識処理はローカル環境で完結し、外部クラウドサービスを必要としない。
+
+音声データおよび文字起こし結果を業務データとして保存しない。
+Category および Description の生成、Issue の登録・更新は行わない。
+
+返却された文字起こし結果は Frontend の既存の Voice / Text Input に表示され、ユーザーが必要に応じて修正した後、AI Draft 生成に利用する。
+文字起こし結果の確認または修正は、独立した必須操作としない。
+
+### Request
+
+Content-Type:
+
+```text
+multipart/form-data
+```
+
+### Form Data
+
+|Name|型|必須|説明|
+|---|---|:-:|---|
+|audio|File|Yes|文字起こし対象の音声|
+
+### Response
+
+```json
+{
+  "text": "ロビーの照明が点滅している"
+}
+```
+
+### Error
+
+|Status|内容|
+|---|---|
+|400|入力音声不正|
+|401|未認証|
+|500|音声認識処理失敗|
+
+---
+
+# 11. AI Draft API
+
+## 11.1 Generate AI Draft
 
 ### Endpoint
 
@@ -686,12 +744,16 @@ POST /api/ai/issue-draft
 
 ### Description
 
-音声入力またはテキスト入力を解析し、Issue Draft を生成する。
+Voice / Text Input に入力されたテキストを解析し、Issue Draft を生成する。
 AI は業務データを保存せず、生成結果のみを返却する。
-AI は Category および Description のみを返却する。
+AI は Category および Description のみを生成して返却し、Description は日本語とする。
 Room、Target Type および Target はレスポンスに含めない。
 
+生成結果は入力支援のための Draft とし、ユーザーが内容を確認し、必要に応じて修正した後に Issue を登録する（User in Control）。
+
 ### Request
+
+input_text は、Local Speech Recognition による文字起こし結果（必要に応じてユーザーが修正したテキスト）、またはユーザーが直接入力したテキストを表す。
 
 AI は Target Type、Room および Target を決定しない。
 
@@ -726,7 +788,7 @@ OTHER の例
 ```json
 {
   "category": "LIGHTING",
-  "description": "Bathroom light remains on after operation."
+  "description": "バスルームのダウンライトが操作後も消灯しない。"
 }
 ```
 
@@ -741,9 +803,9 @@ OTHER の例
 
 ---
 
-# 11. Comment API
+# 12. Comment API
 
-## 11.1 Create Comment
+## 12.1 Create Comment
 
 ### Endpoint
 
@@ -782,7 +844,7 @@ Issue へ Comment を追加する。
 
 ---
 
-## 11.2 Get Comments
+## 12.2 Get Comments
 
 ### Endpoint
 
@@ -821,9 +883,9 @@ Issue に登録されている Comment 一覧を取得する。
 
 ---
 
-# 12. Attachment API
+# 13. Attachment API
 
-## 12.1 Upload Attachment
+## 13.1 Upload Attachment
 
 ### Endpoint
 
@@ -869,7 +931,7 @@ multipart/form-data
 
 ---
 
-## 12.2 Get Attachments
+## 13.2 Get Attachments
 
 ### Endpoint
 
@@ -906,7 +968,7 @@ Issue に添付されている Attachment 一覧を取得する。
 
 ---
 
-## 12.3 Download Attachment
+## 13.3 Download Attachment
 
 ### Endpoint
 
@@ -948,7 +1010,7 @@ Attachment の物理ファイル本体を返却する。
 
 ---
 
-## 12.4 Delete Attachment
+## 13.4 Delete Attachment
 
 ### Endpoint
 
@@ -979,13 +1041,13 @@ Issue から Attachment を削除する。
 
 ---
 
-# 13. Error Response
+# 14. Error Response
 
 本章では、APIで共通利用するエラーレスポンス形式を定義する。
 
 ---
 
-## 13.1 Error Response Format
+## 14.1 Error Response Format
 
 エラー時は以下の JSON 形式で返却する。
 
@@ -1000,7 +1062,7 @@ Issue から Attachment を削除する。
 
 ---
 
-## 13.2 Error Codes
+## 14.2 Error Codes
 
 |Code|HTTP Status|説明|
 |---|---|---|
@@ -1014,7 +1076,7 @@ Issue から Attachment を削除する。
 
 ---
 
-## 13.3 Validation Error Example
+## 14.3 Validation Error Example
 
 ```json
 {
@@ -1027,7 +1089,7 @@ Issue から Attachment を削除する。
 
 ---
 
-## 13.4 Internal Server Error Example
+## 14.4 Internal Server Error Example
 
 ```json
 {
@@ -1040,13 +1102,13 @@ Issue から Attachment を削除する。
 
 ---
 
-# 14. Authorization
+# 15. Authorization
 
 本章では API の認可方針を定義する。
 
 ---
 
-## 14.1 Roles
+## 15.1 Roles
 
 システムで利用するロールを以下に示す。
 
@@ -1057,7 +1119,7 @@ Issue から Attachment を削除する。
 
 ---
 
-## 14.2 Authorization Matrix
+## 15.2 Authorization Matrix
 
 |API|Administrator|Engineer|
 |---|---|---|
@@ -1071,6 +1133,7 @@ Issue から Attachment を削除する。
 |Create Issue|○|○|
 |Update Issue|○|○|
 |Update Status|○|○|
+|Speech Transcription|○|○|
 |AI Draft|○|○|
 |Create Comment|○|○|
 |Get Comments|○|○|
@@ -1081,7 +1144,7 @@ Issue から Attachment を削除する。
 
 ---
 
-## 14.3 Administration APIs
+## 15.3 Administration APIs
 
 初期版では、Project 管理・ User 管理・ Master Data 管理は CLI または CSV で実施する。
 
@@ -1091,17 +1154,18 @@ Issue から Attachment を削除する。
 
 ---
 
-# 15. API Constraints
+# 16. API Constraints
 
 初期版のAPI設計における制約を以下に示す。
 
 |項目|内容|
 |---|---|
 |Protocol|HTTP|
-|Data Format|JSON (添付ファイルを除く)|
+|Data Format|JSON (添付ファイルおよび Speech Transcription のリクエストを除く)|
 |File Upload|multipart/form-data|
 |Authentication|認証必須|
 |AI|Ollama|
+|Offline Operation|初期版の Speech Transcription および AI Draft は、必要なモデルと実行環境をローカルで利用可能とし、インターネット接続および外部クラウドサービスを前提としない。|
 |Database|SQLite|
 |Attachment Storage|Local Storage|
 |Issue Delete API|提供しない|
@@ -1112,7 +1176,7 @@ Issue から Attachment を削除する。
 
 ---
 
-# 16. Future Enhancements
+# 17. Future Enhancements
 
 将来的なAPI拡張を以下に示す。
 
