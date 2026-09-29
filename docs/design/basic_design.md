@@ -1,8 +1,8 @@
 # CIM Basic Design
 
-- **Document Version:** 1.2
+- **Document Version:** 1.3
 - **Status:** Review
-- **Last Updated:** 2026-07-08
+- **Last Updated:** 2026-09-29
 - **Author:** Masato Nagata
 
 ---
@@ -14,6 +14,7 @@
 |1.0|2026-06-30|Initial version|
 |1.1|2026-07-03|Synchronize with updated requirements and database design.|
 |1.2|2026-07-08|Align the basic design with Requirements v1.2. Refine the domain model, clarify AI responsibilities, and improve document consistency.|
+|1.3|2026-09-29|Align with Requirements v1.3: offline operation, local voice transcription, and Japanese Description generation.|
 
 ---
 
@@ -99,7 +100,11 @@ CIM は、Lutron システムのコミッショニング業務において発生
 
 ユーザーは Project を選択し、Issue の登録、更新および参照を行う。
 
-AI (Ollama) は音声入力を解析し、Category および Description を含む AI Draft の作成を支援する。
+Local Speech Recognition は、音声入力をローカル環境で文字起こしする論理コンポーネントである。
+
+文字起こし結果は Frontend の既存の Voice / Text Input に表示し、ユーザーは AI Draft 生成前に必要に応じて修正できる。
+
+AI (Ollama) は文字起こし結果または直接入力されたテキストを解析し、Category および日本語の Description を含む AI Draft を生成する。
 
 AI は入力支援のみを担当し、業務データの最終決定はユーザーが行う。
 
@@ -122,6 +127,8 @@ AI は入力支援のみを担当し、業務データの最終決定はユー�
 
 初期版は Windows 11 へデプロイする。
 
+初期版はローカルネットワーク内で利用し、インターネット接続がない環境でも主要機能を利用できる構成とする。
+
 アプリケーションは OS 依存を避け、将来的に Ubuntu Server へ移行可能な設計とする。
 
 ---
@@ -134,7 +141,15 @@ AI は入力支援のみを担当し、業務データの最終決定はユー�
 +------------------------------------------------------+
 |                    Web Browser                       |
 |             (PC / Smartphone Browser)                |
+|              Frontend / Voice / Text Input            |
 +---------------------------+--------------------------+
+          ^                 |
+          |                 |
+          v                 |
++-------------------------+  |
+| Local Speech Recognition|  |
+| (Local Transcription)   |  |
++-------------------------+  |
                             |
                             v
 +------------------------------------------------------+
@@ -162,6 +177,10 @@ AI は入力支援のみを担当し、業務データの最終決定はユー�
 +-------------------------+
 ```
 
+Local Speech Recognition との連携は音声入力時のみ行う。Frontend から音声を渡し、文字起こし結果を Frontend の Voice / Text Input に表示する。ユーザーは必要に応じて修正でき、そのテキストを FastAPI 経由で Ollama に渡す。
+
+テキスト直接入力の場合は Local Speech Recognition を経由しない。音声認識の具体的な技術および連携方式は本書では決定しない。
+
 ---
 
 ## 5.1 Layer Responsibilities
@@ -173,7 +192,8 @@ AI は入力支援のみを担当し、業務データの最終決定はユー�
 |Repository Layer|データアクセス|
 |SQLite|業務データの永続化|
 |Local Storage|添付ファイル保存|
-|Ollama|AI Draft生成|
+|Local Speech Recognition|音声をローカル環境で文字起こししてテキストを生成|
+|Ollama|テキストから Category および日本語の Description を含む AI Draft を生成|
 
 ---
 
@@ -287,7 +307,7 @@ CIM
 |Authentication|ユーザー認証|
 |Project Selection|作業対象 Project の選択|
 |Issue Management|Issue の登録・更新・参照|
-|AI Draft|音声入力から Category および Description を含む AI Draft を生成|
+|AI Draft|文字起こし結果または直接入力されたテキストから Category および日本語の Description を含む AI Draft を生成|
 |Comment Management|Comment の追加・参照|
 |Attachment Management|写真・動画の添付・削除|
 |Administration|管理者向け管理機能|
@@ -318,11 +338,17 @@ Issue 管理は本システムの中心機能である。
 
 ## 8.4 AI Draft
 
-AI は音声入力を解析し、Category および Description を含む AI Draft を生成する。
+音声入力の場合は Local Speech Recognition によりローカル環境で文字起こしし、その結果を既存の Voice / Text Input に表示する。
+
+ユーザーは文字起こし結果を必要に応じて修正できる。文字起こし結果の確認または修正は、独立した必須操作としない。
+
+Voice / Text Input へのテキスト直接入力も利用できる。
+
+AI は Voice / Text Input の文字起こし結果（ユーザーが修正した場合は修正後のテキスト）または直接入力されたテキストを基に、Category および日本語の Description を含む AI Draft を生成する。
 
 AI は業務データを保存しない。
 
-ユーザーは AI Draft を確認し、必要に応じて修正した後に Issue を登録する。
+ユーザーは AI Draft の Category および Description を確認し、必要に応じて修正した後に Issue を登録する。
 
 ---
 
@@ -472,10 +498,23 @@ AI Draft生成時のシステム処理を以下に示す。
 ``` text
 Engineer
     │
-    │ 音声入力
+    │ 音声入力またはテキスト入力
     ▼
 Frontend
     │
+    ├─ 音声入力 → Local Speech Recognition
+    │                  │
+    │                  │ 文字起こし結果
+    │                  ▼
+    │             Frontend / Voice / Text Input
+    │                  │
+    │                  │ 必要に応じてユーザーが修正
+    │                  │
+    └─ テキスト直接入力 ┤
+                       ▼
+Frontend / Voice / Text Input
+    │
+    │ テキスト
     ▼
 FastAPI
     │
@@ -486,18 +525,26 @@ AI Service
 Ollama
     │
     ▼
-AI Draft
+AI Draft (Category + 日本語 Description)
     │
     ▼
 Frontend
     │
     ▼
 Engineer
+    │
+    │ Category / Description を確認・必要に応じて修正
+    ▼
+Issue 登録 (12.1)
 ```
+
+テキスト直接入力の場合は Local Speech Recognition を経由しない。
+
+文字起こし結果の確認または修正は、独立した必須操作としない。
 
 AI は Issue を保存しない。
 
-生成された AI Draft はユーザーが確認・修正した後に Issue 登録へ利用する。
+生成された AI Draft はユーザーが確認し、必要に応じて修正した後に Issue 登録へ利用する。
 
 ---
 
@@ -563,12 +610,14 @@ SQLite
 
 ## 13.2 AI Draft
 
+入力から文字起こし結果の表示までの流れは 12.2 AI Draft Generation に従う。以下はテキストを基にした AI Draft のデータフローを示す。
+
 ``` text
 Engineer
       │
       ▼
-Frontend
-      │
+Frontend / Voice / Text Input
+      │ テキスト
       ▼
 FastAPI
       │
@@ -579,7 +628,10 @@ AI Service
 Ollama
       │
       ▼
-AI Draft
+AI Draft (Category + 日本語 Description)
+      │
+      ▼
+Frontend
       │
       ▼
 Engineer
@@ -646,7 +698,7 @@ Administration機能はAdministratorのみ利用できる。
 
 # 15. AI Integration
 
-本システムではローカル LLM（Ollama）を利用する。
+本システムでは、音声の文字起こしに Local Speech Recognition、テキストからの AI Draft 生成にローカル LLM（Ollama）を利用する。
 
 AIは入力支援のみを担当し、業務上の最終判断は利用者が行う。
 
@@ -654,18 +706,25 @@ AIは入力支援のみを担当し、業務上の最終判断は利用者が行
 
 ## 15.1 AI Responsibilities
 
-AI は以下を実施する。
+Local Speech Recognition は音声をローカル環境で文字起こしし、テキストを生成する。
 
-- 音声入力の解析
+Ollama / AI は以下を実施する。
+
+- 文字起こし結果または直接入力されたテキストの解析
 - Category の推定
-- Description の生成
+- 日本語の Description の生成
 
 ---
 
 ## 15.2 AI Limitations
 
+AI は業務データを保存・更新しない。
+
 AIは以下を実施しない。
 
+- Target Type の決定
+- Room の決定
+- Target の決定
 - Issue 保存
 - Issue 更新
 - Status 変更
@@ -677,7 +736,9 @@ AIは以下を実施しない。
 
 ## 15.3 User Confirmation
 
-AI が生成した内容は、ユーザーが確認・修正した後に Issue 登録を行う。
+AI が生成した Category および Description は、ユーザーが確認し、必要に応じて修正した後に Issue 登録を行う。
+
+文字起こし結果の確認または修正を独立した必須操作にはせず、AI Draft に対する User in Control の方針を維持する。
 
 ---
 
@@ -818,7 +879,8 @@ cim/
 
 |インターフェース|用途|
 |---|---|
-|Ollama API|AI Draft生成|
+|Local Speech Recognition|ローカル環境での音声の文字起こし|
+|Ollama API|テキストからの AI Draft 生成|
 |File System|添付ファイル保存|
 |SQLite|業務データ保存|
 
@@ -829,6 +891,8 @@ cim/
 AI連携はOllamaとのAPI通信によって実現する。
 
 通信方式およびリクエスト・レスポンス仕様はAPI設計書で定義する。
+
+Local Speech Recognition は、音声をテキストへ変換するために必要なローカル機能として連携する。具体的な技術およびインターフェース仕様は本書では決定しない。
 
 ---
 
@@ -849,6 +913,9 @@ AI連携はOllamaとのAPI通信によって実現する。
 |Database|SQLiteを利用する。|
 |File Storage|Local Storageを利用する。|
 |AI|Ollamaを利用する。|
+|Speech Recognition|Local Speech Recognition によりローカル環境で文字起こしする。|
+|Offline Operation|Issue 管理、Attachment 管理、AI Draft および音声認識を含む主要機能は、インターネット接続および外部クラウドサービスを必須としない。|
+|Local Runtime|AI Draft および音声認識に必要なモデルと実行環境はローカル環境で利用可能とする。|
 |Deployment|Windows 11環境へデプロイする。|
 |Master Data Management|CLIまたはCSVによる管理とする。|
 |Issue Deletion|提供しない。|
