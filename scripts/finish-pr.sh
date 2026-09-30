@@ -22,7 +22,10 @@ gh pr merge --merge --delete-branch
 
 git switch main
 git pull --ff-only
-git branch -d "$CURRENT_BRANCH"
+
+if git show-ref --verify --quiet "refs/heads/$CURRENT_BRANCH"; then
+    git branch -d "$CURRENT_BRANCH"
+fi
 
 echo
 echo "Workflow completed."
