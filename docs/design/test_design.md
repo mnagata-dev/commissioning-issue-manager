@@ -2,7 +2,7 @@
 
 - **Document Version:** 1.3
 - **Status:** Draft
-- **Last Updated:** 2026-09-29
+- **Last Updated:** 2026-10-07
 - **Author:** Masato Nagata
 
 ---
@@ -15,6 +15,7 @@
 |1.1|2026-07-03|Update authentication and master data related test cases.|
 |1.2|2026-07-14|Align test design with Requirements v1.2, API Design, UI Design, and Detailed Design. Add validation, AI Draft, attachment, and business rule test cases.|
 |1.3|2026-09-29|Add Local Speech Recognition / Speech Transcription tests, separation from AI Draft, Japanese Description, and User in Control coverage.|
+|1.3|2026-10-07|Add UI verification cases for Project-scoped Input Assistance, Issue Edit isolation, and localStorage failures.|
 
 ---
 
@@ -602,6 +603,8 @@ Speech Transcription および AI Draft の呼び出し前後で、テスト用 
 
 ## 11.5 Issue Create
 
+Input Assistance は Requirements v1.3 §7.12、UI Design §12.7、Detailed Design §6.3 に従って確認する。
+
 |テスト項目|内容|
 |---|---|
 |Create Issue|Issue を登録できること|
@@ -619,6 +622,16 @@ Speech Transcription および AI Draft の呼び出し前後で、テスト用 
 |Separate Errors|Speech Recognition Error と AI Draft Error を区別して表示すること|
 |User in Control|AI Draft の Category / Description を確認し、必要に応じて修正してから Save で Issue を登録できること。音声認識・AI Draft 生成だけでは登録されないこと|
 |Target Unchanged|ユーザーが指定した Target Type / Room / Target を AI が推定・変更しないこと|
+|Save Previous Values|登録成功時に、その Issue に使用した Target Type、Room、Category が対象 Project の前回利用値として localStorage に保存されること|
+|Restore Previous Values|Issue Create を開いたとき、現在選択中の Project の前回利用値が初期表示され、別 Project の保存値は使用されないこと|
+|Restore Available Room|保存された Room が現在の Project で選択可能な場合だけ復元され、選択できない Room や別 Project の Room は復元されないこと|
+|Missing or Invalid Values|保存値が存在しない、無効、または現在利用できない項目は復元されず、その項目が通常の初期状態となること|
+|Save OTHER Target History|OTHER の登録成功時だけ、その Target が対象 Project の localStorage の履歴へ追加されること。ROOM の登録では追加されないこと|
+|OTHER Target Candidates|OTHER の場合に現在の Project の履歴だけが候補表示され、ユーザーが候補を選択できること。ROOM の場合は候補表示されないこと|
+|Free Target Input|履歴候補を使用せず自由入力でき、AI が Target を推測・自動決定しないこと|
+|No Save Before Success|登録失敗、入力中、キャンセル、AI Draft 生成では前回利用値および Target 履歴が更新されないこと|
+|localStorage Read Failure|localStorage が利用できない場合や保存データを解析できない場合、入力支援の値・履歴を適用せず通常の入力・Issue 登録を継続できること|
+|localStorage Write Failure|登録成功後に localStorage の保存が失敗しても、Issue 登録は成功として扱われること|
 
 ---
 
@@ -628,6 +641,8 @@ Speech Transcription および AI Draft の呼び出し前後で、テスト用 
 |---|---|
 |Update Issue|Issue を更新できること|
 |Update Status|Status を変更できること|
+|Preserve Current Values|localStorage に前回利用値が存在しても編集対象 Issue の現在値が初期表示され、上書きされないこと|
+|No Input Assistance Update|Issue Edit の更新成功時も、前回利用値および OTHER Target 履歴が更新されないこと|
 |Required Fields|Target Type、Category、Description が未入力の場合にエラーが表示されること|
 |ROOM Validation|Target Type = ROOM の場合、Room 未選択でエラーとなること|
 |OTHER Validation|Target Type = OTHER の場合、Target 未入力でエラーとなること|

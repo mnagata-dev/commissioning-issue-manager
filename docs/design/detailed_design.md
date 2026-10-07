@@ -2,7 +2,7 @@
 
 - **Document Version:** 1.3
 - **Status:** Draft
-- **Last Updated:** 2026-09-30
+- **Last Updated:** 2026-10-07
 - **Author:** Masato Nagata
 
 ---
@@ -16,6 +16,7 @@
 |1.2|2026-07-09|Align with Requirements v1.2, Database Design, API Design, and UI Design. Simplify Target Type, update AI Draft design, validation rules, and related service definitions.|
 |1.3|2026-09-29|Align with Requirements, Basic Design, API Design and UI Design v1.3, and updated ADR-001. Define Local Speech Recognition and SpeechService responsibilities separately from AI Draft generation.|
 |1.3|2026-09-30|Define whisper-cli invocation, audio normalization with ffmpeg, temporary file handling, and executable/model path configuration.|
+|1.3|2026-10-07|Define Project-scoped localStorage persistence, restoration, and failure handling for Input Assistance.|
 
 ---
 
@@ -285,6 +286,37 @@ Frontend の画面ルートは OpenAPI Schema に含めない。
 既存の `/api/*` REST API のパスおよび動作は変更しない。
 
 別の Frontend Server、npm development server または reverse proxy は初期版では導入しない。
+
+---
+
+## 6.3 Input Assistance
+
+Requirements v1.3 §7.12 および UI Design §12.7 の入力支援は Frontend で実現する。新しい API や Database Schema は追加しない。
+
+### Stored Data
+
+ブラウザの localStorage に、Project ID で区別して以下を保存する。他の Project の値や履歴は使用しない。
+
+|保存対象|内容|
+|---|---|
+|前回利用値|Issue 登録に使用した Target Type、Room（room_id）、Category|
+|OTHER Target 入力履歴|Target Type = OTHER の Issue 登録に使用した Target|
+
+### Save and Restore
+
+Issue Create の登録成功後に、その Issue が属する Project の前回利用値を保存する。Target Type が OTHER の場合だけ、その Target を同じ Project の履歴へ追加する。登録失敗、入力中、キャンセル、AI Draft 生成では保存しない。
+
+Issue Create を開いたときは、現在選択中の Project の保存値を読み込む。Target Type と Category は現在選択可能な値であることを確認し、Room は現在の Project の選択可能な Room に含まれることを確認してから、UI Design §12.7 に従って復元する。保存値が存在しない、無効、または現在利用できない場合は、その項目を復元しない。
+
+OTHER Target 入力履歴も現在の Project のものだけを読み込み、Target Type = OTHER のとき候補として表示する。候補の選択・自由入力はユーザーが行い、AI に Target の推測・自動決定をさせない。
+
+Issue Edit は編集対象 Issue の現在値を初期表示し、前回利用値を適用しない。更新成功時も、前回利用値および OTHER Target 入力履歴は保存・更新しない。
+
+### localStorage Errors
+
+localStorage の読み込み・書き込み、および保存データの解析で発生するエラーは入力支援処理内で扱う。読み込めない値や履歴は適用せず、通常の初期状態とする。
+
+localStorage が利用できない場合でも、通常の入力・Issue 登録処理を継続する。登録成功後の保存エラーによって、成功した Issue 登録を失敗として扱わない。入力支援だけを利用できない状態とする。
 
 ---
 

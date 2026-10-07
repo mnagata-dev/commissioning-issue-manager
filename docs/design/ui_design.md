@@ -2,7 +2,7 @@
 
 - **Document Version:** 1.3
 - **Status:** Draft
-- **Last Updated:** 2026-10-01
+- **Last Updated:** 2026-10-07
 - **Author:** Masato Nagata
 
 ---
@@ -16,6 +16,7 @@
 |1.2|2026-07-09|Align UI design with Requirements v1.2. Simplify Target Type to ROOM and OTHER, clarify AI Draft workflow, add validation rules, and improve Issue Detail and Issue Edit screens.|
 |1.3|2026-09-29|Align UI design with Requirements v1.3, Basic Design v1.3, and API Design v1.3 for local voice transcription, Voice / Text Input, and the AI Draft workflow.|
 |1.3|2026-10-01|Clarify Voice Input recording start and stop operations before local voice transcription.|
+|1.3|2026-10-07|Specify Input Assistance defaults and OTHER Target history for Issue Create, and preserve Issue Edit current values.|
 
 ---
 
@@ -773,6 +774,20 @@ Target Type が OTHER の場合
 
 ---
 
+## 12.7 Input Assistance
+
+Requirements v1.3 §7.12 の入力支援として、Issue Create を開いたとき、現在選択中の Project の前回利用値を Target Type、Room、Category の初期値として表示する。
+
+Room は現在の Project で選択可能な場合だけ復元する。保存値が存在しない、無効、または現在利用できない項目は復元せず、その項目を通常の初期状態とする。
+
+Target Type が OTHER の場合、現在の Project の過去の Target 入力履歴を候補として表示し、ユーザーが選択できるようにする。候補を使用せず自由入力することもできる。Target はユーザーが決定し、AI は推測・自動決定しない。
+
+保存先はブラウザの localStorage とする。Issue の登録成功時だけ、登録に使用した前回利用値を保存し、OTHER の場合は Target を履歴へ追加する。Project 単位の保存・復元処理は Detailed Design §6.3 に従う。
+
+localStorage が利用できない場合は入力支援だけを利用できない状態とし、通常の入力・Issue 登録は継続できるようにする。
+
+---
+
 # 13. Issue Edit
 
 ## 13.1 Purpose
@@ -825,6 +840,8 @@ Description
 Issue Create 画面と同様の入力項目を表示する。
 
 編集画面では、既存の Issue の内容を初期値として表示し、利用者は必要な項目を変更できる。
+
+localStorage の前回利用値で編集対象 Issue の現在値を上書きしない。Issue Edit の更新成功時も、前回利用値および OTHER Target 入力履歴は更新しない。
 
 |項目|説明|
 |---|---|
