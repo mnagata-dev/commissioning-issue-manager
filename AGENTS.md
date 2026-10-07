@@ -215,7 +215,7 @@ Unless explicitly instructed.
 # Branch Rules
 
 - Work only on the assigned branch.
-- Never merge branches.
+- Follow the [Pull Request Merge policy](CONTRIBUTING.md#pull-request-merge-policy) for Merge operations.
 - Never rewrite Git history.
 - Never force push.
 - Never modify unrelated files.

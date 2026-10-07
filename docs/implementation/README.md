@@ -86,7 +86,7 @@ The expected workflow is:
 6. Submit the implementation for ChatGPT review.
 7. Commit.
 8. Create a Pull Request.
-9. Merge after review.
+9. Merge according to the [Pull Request Merge policy](../../CONTRIBUTING.md#pull-request-merge-policy).
 
 ---
 

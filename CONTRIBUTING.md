@@ -76,6 +76,18 @@ Recommended workflow:
 6. Create Pull Request
 7. Merge
 
+## Pull Request Merge Policy
+
+Coding Agent は自律的に Pull Request を Merge してはならない。
+対象の Pull Request に対して人間から明示的な Merge 承認が与えられた場合のみ、Coding Agent が Merge 操作を実行してよい。
+承認前に Merge 操作を実行してはならない。レビュー完了や Commit、Push、Pull Request 作成の許可を Merge 承認とみなしてはならない。
+
+Merge 前には、既存の workflow と review policy に従い、対象の Pull Request と作業ブランチ、レビュー結果、必要なテスト・チェックの結果を確認する。
+
+`scripts/finish-pr.sh` は、人間が実行するか、対象の Pull Request に対する人間の明示的な Merge 承認後に Coding Agent が実行してよい。
+実行前にレビュー・承認済みであることを確認し、スクリプトによる main 以外の作業ブランチと clean な作業ツリーの確認に従う。
+スクリプトは人間の承認を自動検証しないため、実行者が承認を確認する。
+
 ---
 
 # 5. Branch Strategy
