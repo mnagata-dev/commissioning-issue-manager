@@ -17,6 +17,7 @@ from app.api.routes import (
     issues_router,
     projects_router,
     rooms_router,
+    speech_router,
 )
 from app.core.config import Settings, settings
 from app.core.exceptions import ApplicationError, ValidationError
@@ -79,6 +80,7 @@ def create_app(application_settings: Settings = settings) -> FastAPI:
     application.include_router(comments_router)
     application.include_router(attachments_router)
     application.include_router(ai_router)
+    application.include_router(speech_router)
 
     @application.get("/", include_in_schema=False)
     def login_page() -> FileResponse:

@@ -2,7 +2,7 @@
 
 - **Document Version:** 1.3
 - **Status:** Draft
-- **Last Updated:** 2026-09-29
+- **Last Updated:** 2026-10-01
 - **Author:** Masato Nagata
 
 ---
@@ -15,6 +15,7 @@
 |1.1|2026-07-03|Reflect updated login specification and master data terminology.|
 |1.2|2026-07-09|Align UI design with Requirements v1.2. Simplify Target Type to ROOM and OTHER, clarify AI Draft workflow, add validation rules, and improve Issue Detail and Issue Edit screens.|
 |1.3|2026-09-29|Align UI design with Requirements v1.3, Basic Design v1.3, and API Design v1.3 for local voice transcription, Voice / Text Input, and the AI Draft workflow.|
+|1.3|2026-10-01|Clarify Voice Input recording start and stop operations before local voice transcription.|
 
 ---
 
@@ -664,6 +665,7 @@ Description
 AI Draft
 
 [ Voice Input ]
+(録音中: [ Stop Recording ])
 
 Voice / Text Input
 
@@ -680,7 +682,7 @@ Voice / Text Input
 [ Cancel ]
 ```
 
-Voice Input によるローカル文字起こし結果は Voice / Text Input に表示する。ユーザーは同じ入力欄で必要に応じて修正するか、直接テキストを入力し、Generate AI Draft を実行する。
+Voice Input で録音を開始し、録音中は Stop Recording で明示的に録音を終了する。録音終了後に音声を Speech Transcription API へ送信し、ローカル文字起こし結果を Voice / Text Input に表示する。ユーザーは同じ入力欄で必要に応じて修正するか、直接テキストを入力し、Generate AI Draft を明示的に実行する。
 
 生成結果は上部の Category / Description に反映し、ユーザーが確認・必要に応じて修正した後、Save で Issue を登録する。詳細な操作の流れは 12.5 AI Draft Flow に従う。
 
@@ -696,7 +698,8 @@ Voice Input によるローカル文字起こし結果は Voice / Text Input に
 |Category|Category 選択|
 |Description|詳細説明|
 |AI Draft|AI 入力支援|
-|Voice Input|音声入力を開始するための操作|
+|Voice Input|録音を開始するための操作|
+|Stop Recording|録音中に表示し、ユーザーが明示的に録音を終了するための操作|
 |Voice / Text Input|ローカル文字起こし結果を表示、またはユーザーが直接テキストを入力する。ユーザーが編集可能。|
 
 ---
@@ -705,8 +708,9 @@ Voice Input によるローカル文字起こし結果は Voice / Text Input に
 
 |操作|内容|
 |---|---|
-|Voice Input|音声入力を開始し、Frontend から音声を送信する。Local Speech Recognition による文字起こし結果を Voice / Text Input に表示し、ユーザーが必要に応じて修正できる。|
-|Generate AI Draft|Voice / Text Input のテキストから AI Draft を生成する。|
+|Voice Input|音声の録音を開始する。|
+|Stop Recording|録音を終了し、録音した音声を Speech Transcription API へ送信する。Local Speech Recognition による文字起こし成功後、response の text を Voice / Text Input に表示する。|
+|Generate AI Draft|ユーザーが Voice / Text Input を確認し、必要に応じて修正した後、そのテキストから AI Draft を生成する。文字起こし完了後に自動実行しない。|
 |Save|Issue を登録する。|
 |Cancel|登録を中止する。|
 
@@ -726,8 +730,9 @@ Voice Input によるローカル文字起こし結果は Voice / Text Input に
 
 ```text
 音声入力:
-Voice Input → 音声 → Local Speech Recognition → text → Voice / Text Input
-                                                        (必要に応じて修正)
+Voice Input → 録音開始 → Stop Recording → 録音終了
+→ Speech Transcription API へ音声送信 → Local Speech Recognition → text
+→ Voice / Text Input → ユーザーが必要に応じて修正 → Generate AI Draft
 
 テキスト入力:
 ユーザー入力 → Voice / Text Input
@@ -735,7 +740,7 @@ Voice Input → 音声 → Local Speech Recognition → text → Voice / Text In
 
 テキスト直接入力では Local Speech Recognition を経由しない。
 
-文字起こし結果の確認・修正は既存の Voice / Text Input で行い、独立した確認画面や必須確認操作は設けない。
+文字起こし結果の確認・修正は既存の Voice / Text Input で行い、独立した確認画面や必須確認操作は設けない。文字起こし完了後に Generate AI Draft を自動実行しない。
 
 入力後は以下の共通フローとする。
 

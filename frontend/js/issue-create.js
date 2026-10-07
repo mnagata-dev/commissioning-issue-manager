@@ -10,6 +10,7 @@ import {
 
 const SYSTEM_ERROR_MESSAGE = "予期しないエラーが発生しました。\n時間をおいて再度お試しください。";
 const AI_ERROR_MESSAGE = "AI Draft の生成に失敗しました。\n入力内容を確認して再度実行してください。";
+const SPEECH_ERROR_MESSAGE = "音声の文字起こしに失敗しました。\n\n再度音声入力を行うか、Voice / Text Input にテキストを入力してください。";
 const selectedProject = readSelectedProject();
 const form = document.querySelector("#issue-create-form");
 const fields = document.querySelector("#create-fields");
@@ -19,6 +20,8 @@ const target = document.querySelector("#target");
 const category = document.querySelector("#category");
 const description = document.querySelector("#description");
 const inputText = document.querySelector("#input-text");
+const voiceInputButton = document.querySelector("#voice-input-button");
+const stopRecordingButton = document.querySelector("#stop-recording-button");
 const loadingMessage = document.querySelector("#issue-loading");
 const errorMessage = document.querySelector("#issue-error");
 const draftMessage = document.querySelector("#draft-message");
@@ -26,6 +29,11 @@ const logoutButton = document.querySelector("#logout-button");
 const cancelLink = document.querySelector("#cancel-link");
 let ready = false;
 let busy = false;
+let recordingStarting = false;
+let mediaRecorder = null;
+let mediaStream = null;
+let audioChunks = [];
+let recordingFailed = false;
 
 function showError(message) {
   errorMessage.textContent = message;
@@ -47,6 +55,28 @@ function setBusy(value, message = "処理中です…") {
   loadingMessage.textContent = message;
   loadingMessage.hidden = !busy;
   cancelLink.setAttribute("aria-disabled", String(busy));
+}
+
+function stopMediaStream(stream) {
+  for (const track of stream?.getAudioTracks() || []) {
+    track.stop();
+  }
+}
+
+function setRecordingState(recording) {
+  voiceInputButton.hidden = recording;
+  stopRecordingButton.hidden = !recording;
+  voiceInputButton.disabled = recording || recordingStarting || busy || !ready;
+  stopRecordingButton.disabled = !recording;
+}
+
+function resetRecording() {
+  stopMediaStream(mediaStream);
+  mediaRecorder = null;
+  mediaStream = null;
+  audioChunks = [];
+  recordingStarting = false;
+  setRecordingState(false);
 }
 
 function updateTargetFields() {
@@ -107,6 +137,92 @@ function handleRequestError(error, forDraft = false) {
     showError("入力内容を確認してください。Room・Target・Category・Description が正しく指定されているか確認してください。");
   } else {
     showError(forDraft && error instanceof ApiError && error.code === "AI_SERVICE_ERROR" ? AI_ERROR_MESSAGE : SYSTEM_ERROR_MESSAGE);
+  }
+}
+
+function handleSpeechError(error) {
+  if (handleAuthenticatedApiError(error)) {
+    ready = false;
+    return;
+  }
+  showError(SPEECH_ERROR_MESSAGE);
+}
+
+async function transcribeAudio(audio) {
+  setBusy(true, "音声を文字起こししています…");
+  try {
+    const formData = new FormData();
+    formData.append("audio", audio, "recording");
+    const response = await apiRequest("/api/speech/transcriptions", {
+      method: "POST",
+      body: formData,
+    });
+    if (!response || typeof response.text !== "string" || !response.text.trim()) {
+      throw new Error("Invalid Speech Transcription response.");
+    }
+    inputText.value = response.text;
+  } catch (error) {
+    handleSpeechError(error);
+  } finally {
+    setBusy(false);
+    setRecordingState(false);
+  }
+}
+
+async function startRecording() {
+  if (!ready || busy || recordingStarting || mediaRecorder) {
+    return;
+  }
+  clearErrors();
+  recordingStarting = true;
+  setRecordingState(false);
+  let stream = null;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaStream = stream;
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
+    recordingFailed = false;
+    mediaRecorder.addEventListener("dataavailable", (event) => {
+      if (event.data.size > 0) {
+        audioChunks.push(event.data);
+      }
+    });
+    mediaRecorder.addEventListener("error", () => {
+      recordingFailed = true;
+      resetRecording();
+      showError(SPEECH_ERROR_MESSAGE);
+    });
+    mediaRecorder.addEventListener("stop", () => {
+      const chunks = audioChunks;
+      const mimeType = chunks[0]?.type || "";
+      const failed = recordingFailed;
+      resetRecording();
+      if (!failed) {
+        void transcribeAudio(new Blob(chunks, { type: mimeType }));
+      }
+    });
+    mediaRecorder.start();
+    recordingStarting = false;
+    setRecordingState(true);
+  } catch (error) {
+    resetRecording();
+    handleSpeechError(error);
+  }
+}
+
+function stopRecording() {
+  if (!mediaRecorder || mediaRecorder.state !== "recording") {
+    return;
+  }
+  stopRecordingButton.disabled = true;
+  try {
+    mediaRecorder.stop();
+    stopMediaStream(mediaStream);
+  } catch (error) {
+    recordingFailed = true;
+    resetRecording();
+    handleSpeechError(error);
   }
 }
 
@@ -208,10 +324,13 @@ targetType.addEventListener("change", () => {
 });
 form.addEventListener("submit", createIssue);
 document.querySelector("#generate-draft-button").addEventListener("click", generateDraft);
+voiceInputButton.addEventListener("click", startRecording);
+stopRecordingButton.addEventListener("click", stopRecording);
 logoutButton.addEventListener("click", performLogout);
 cancelLink.addEventListener("click", (event) => {
   if (busy) {
     event.preventDefault();
   }
 });
+window.addEventListener("pagehide", () => stopMediaStream(mediaStream));
 initialize();

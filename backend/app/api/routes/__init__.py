@@ -7,6 +7,7 @@ from app.api.routes.comments import router as comments_router
 from app.api.routes.issues import router as issues_router
 from app.api.routes.projects import router as projects_router
 from app.api.routes.rooms import router as rooms_router
+from app.api.routes.speech import router as speech_router
 
 __all__ = [
     "ai_router",
@@ -16,4 +17,5 @@ __all__ = [
     "issues_router",
     "projects_router",
     "rooms_router",
+    "speech_router",
 ]
