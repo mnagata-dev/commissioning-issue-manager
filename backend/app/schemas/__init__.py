@@ -20,6 +20,7 @@ from app.schemas.issue import (
 )
 from app.schemas.project import ProjectListResponse, ProjectResponse
 from app.schemas.room import RoomListResponse, RoomResponse
+from app.schemas.speech import SpeechTranscriptionResponse
 
 __all__ = [
     "AttachmentResponse",
@@ -40,6 +41,7 @@ __all__ = [
     "RoomReferenceResponse",
     "RoomListResponse",
     "RoomResponse",
+    "SpeechTranscriptionResponse",
     "UpdateIssueRequest",
     "UpdateIssueStatusRequest",
     "UploadAttachmentResponse",

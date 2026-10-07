@@ -56,3 +56,10 @@ class StorageError(ApplicationError):
     code = "STORAGE_ERROR"
     default_message = "The storage operation failed."
     status_code = 500
+
+
+class SpeechRecognitionError(ApplicationError):
+    """Raised when speech recognition produces no usable result."""
+    code = "SPEECH_RECOGNITION_ERROR"
+    default_message = "Speech recognition failed."
+    status_code = 500

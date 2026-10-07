@@ -33,6 +33,7 @@ def test_application_has_only_approved_routes() -> None:
         "/api/auth/logout",
         "/api/auth/me",
         "/api/ai/issue-draft",
+        "/api/speech/transcriptions",
         "/api/projects",
         "/api/hotels/{hotel_id}/rooms",
         "/api/projects/{project_id}/issues",

@@ -46,3 +46,16 @@ def test_session_secret_has_no_default(monkeypatch: MonkeyPatch) -> None:
     monkeypatch.delenv("CIM_SESSION_SECRET", raising=False)
     settings = Settings.from_environment()
     assert settings.session_secret is None
+
+
+def test_speech_configuration(monkeypatch: MonkeyPatch) -> None:
+    monkeypatch.delenv("CIM_SPEECH_EXECUTABLE", raising=False)
+    monkeypatch.delenv("CIM_SPEECH_MODEL", raising=False)
+    settings = Settings.from_environment()
+    assert settings.speech_executable is None
+    assert settings.speech_model is None
+    monkeypatch.setenv("CIM_SPEECH_EXECUTABLE", "/local/whisper-cli")
+    monkeypatch.setenv("CIM_SPEECH_MODEL", "/local/model.bin")
+    settings = Settings.from_environment()
+    assert settings.speech_executable == "/local/whisper-cli"
+    assert settings.speech_model == "/local/model.bin"

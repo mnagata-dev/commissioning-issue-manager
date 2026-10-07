@@ -2,7 +2,7 @@
 
 - **Document Version:** 1.3
 - **Status:** Draft
-- **Last Updated:** 2026-09-29
+- **Last Updated:** 2026-09-30
 - **Author:** Masato Nagata
 
 ---
@@ -15,6 +15,7 @@
 |1.1|2026-07-03|Synchronize with updated basic design and database design.|
 |1.2|2026-07-09|Align with Requirements v1.2, Database Design, API Design, and UI Design. Simplify Target Type, update AI Draft design, validation rules, and related service definitions.|
 |1.3|2026-09-29|Align with Requirements, Basic Design, API Design and UI Design v1.3, and updated ADR-001. Define Local Speech Recognition and SpeechService responsibilities separately from AI Draft generation.|
+|1.3|2026-09-30|Define whisper-cli invocation, audio normalization with ffmpeg, temporary file handling, and executable/model path configuration.|
 
 ---
 
@@ -391,9 +392,43 @@ Core にはアプリケーション全体で利用する共通機能を配置す
 - 必要なモデルと実行環境はローカルで利用可能とし、インターネット接続および外部クラウドサービスを前提としない。
 - 具体的な音声認識技術との連携処理をこの境界に分離する。
 
-AI Draft の生成や業務データの保存は担当しない。技術固有の失敗は SpeechService でアプリケーション例外へ変換する。
+Speech Recognition Client の責務は、受け取った audio から transcription text を生成することに限定する。AI Draft の生成、AIService の呼び出し、Target Type / Room / Target の決定、Issue の登録・更新、Repository / SQLAlchemy Session の利用、および audio / transcription text の業務データとしての永続化は行わない。技術固有の失敗は SpeechService でアプリケーション例外へ変換する。
 
-具体的な製品・ライブラリ、モデル、呼び出し方式は今回決定しない。ブラウザ録音 API、audio codec / sample rate / channel 数、変換方式、一時ファイル、実行・モデルパス、環境変数、timeout、concurrency / queue、性能調整、配布・配置方式も技術選定後に必要に応じて ADR または Detailed Design で決定する。
+### Invocation
+
+ADR-006 に従い whisper.cpp を使用する。初期実装では Python の `subprocess` から `whisper-cli` を実行する。
+
+初期実装では認識言語として日本語（`-l ja`）を指定する。
+
+`whisper-cli` executable および model のパスはコードへ固定せず、Configuration から取得する。
+
+### Audio Normalization
+
+Speech Transcription API が受け取った audio は、この境界内で whisper.cpp が処理可能な形式へ正規化する。初期実装ではローカルの ffmpeg を Python の `subprocess` から実行し、以下の WAV 形式へ変換してから `whisper-cli` へ渡す。外部クラウドサービスは使用しない。
+
+|項目|形式|
+|---|---|
+|Sample Rate|16 kHz|
+|Channel|Mono|
+|Sample Format|PCM 16-bit|
+
+### Temporary Files
+
+入力音声および変換後 WAV は、音声認識処理に必要な temporary file としてのみ保持する。temporary file は成功・失敗にかかわらず処理終了時に削除する。Attachment Storage および SQLite には保存しない。
+
+### Browser Recording
+
+Frontend Voice Input は Browser の `navigator.mediaDevices.getUserMedia({ audio: true })` と `MediaRecorder` を使用して音声を録音する。録音データは `MediaRecorder` が生成する `Blob` として保持し、`FormData` の `audio` field に設定して `POST /api/speech/transcriptions` へ送信する。
+
+Frontend では WAV への変換を行わず、Browser が生成した録音データをそのまま Speech Transcription API へ送信する。Backend の Speech Recognition Client が ffmpeg を使用して 16 kHz / Mono / PCM 16-bit WAV へ正規化する。
+
+文字起こし成功後は response の `text` を既存の Voice / Text Input に反映する。文字起こし結果から AI Draft を自動生成しない。ユーザーが文字起こし結果を確認・修正した後、既存の Generate AI Draft 操作を明示的に実行する。
+
+### Deferred Decisions
+
+whisper.cpp model の種類、`whisper-cli` executable / model file の具体的な配置場所、packaging 方法、MIME Type の正式な許可リスト、最大録音時間、最大ファイルサイズ、および timeout / retry policy は今回決定しない。
+
+Browser が生成する具体的な録音形式は、実行環境の `MediaRecorder` が対応する形式を使用し、特定の MIME Type をアプリケーション側で固定しない。正式な MIME Type の許可リストが必要になった場合は、別途 Detailed Design で決定する。環境変数、concurrency / queue、性能調整も必要に応じて ADR または Detailed Design で決定する。
 
 ---
 
@@ -1897,7 +1932,7 @@ Speech audio および transcription text は、Issue、Attachment 等の業務�
 
 Speech audio、transcription および AI Draft 用の Table / Column / Migration は追加しない。ユーザーが確認した AI Draft の内容を既存の Issue 登録処理で保存する流れは維持する。
 
-音声認識実装内部で一時ファイルが必要かどうか、およびその方式は今回決定しない。
+音声認識処理の temporary file の扱いは 7.7 に従う。
 
 ---
 

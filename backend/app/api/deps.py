@@ -5,7 +5,7 @@ from typing import Annotated
 from fastapi import Depends, Request
 from sqlalchemy.orm import Session
 
-from app.clients import OllamaClient
+from app.clients import OllamaClient, SpeechClient
 from app.core.config import settings
 from app.core.exceptions import AuthenticationError, AuthorizationError
 from app.db.session import get_db_session
@@ -28,10 +28,21 @@ from app.services import (
     IssueService,
     ProjectService,
     RoomService,
+    SpeechService,
     StorageService,
 )
 
 DatabaseSession = Annotated[Session, Depends(get_db_session)]
+
+
+def get_speech_service() -> SpeechService:
+    """Construct speech recognition without a database dependency."""
+    return SpeechService(
+        SpeechClient(settings.speech_executable, settings.speech_model)
+    )
+
+
+SpeechServiceDependency = Annotated[SpeechService, Depends(get_speech_service)]
 
 
 def get_ai_service(session: DatabaseSession) -> AIService:
@@ -149,5 +160,6 @@ __all__ = [
     "get_issue_service",
     "get_project_service",
     "get_room_service",
+    "get_speech_service",
     "require_administrator",
 ]

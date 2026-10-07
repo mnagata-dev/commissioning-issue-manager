@@ -69,10 +69,12 @@
             <section class="detail-section" aria-labelledby="draft-heading">
               <h2 id="draft-heading">AI Draft</h2>
               <p>生成された Category と Description を確認・修正してから Create を押してください。</p>
+              <button id="voice-input-button" class="secondary-button" type="button">Voice Input</button>
+              <button id="stop-recording-button" class="secondary-button" type="button" hidden>Stop Recording</button>
               <div class="form-field">
                 <label for="input-text">Voice / Text Input</label>
                 <textarea id="input-text" rows="3" aria-describedby="input-help input-text-error"></textarea>
-                <p id="input-help" class="item-metadata">テキストを入力するか、端末の音声入力を使用してください。</p>
+                <p id="input-help" class="item-metadata">テキストを入力するか、Voice Input で録音してください。</p>
                 <p id="input-text-error" class="alert" hidden></p>
               </div>
               <button id="generate-draft-button" class="secondary-button" type="button">Generate AI Draft</button>
