@@ -72,3 +72,4 @@ Categoryは原因を表さない。
 - design/basic_design.md
 - design/database_design.md
 - ADR-002: TargetType Definition
+- [ADR-007: Target Type Simplification](ADR-007-target-type-simplification.md)

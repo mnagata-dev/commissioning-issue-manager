@@ -5,6 +5,8 @@
 - **Category:** Domain
 - **Decision Makers:** Masato Nagata
 
+本 ADR の Context / Alternatives にある AREA は、当時の Target Type 定義に基づく歴史的記述である。現行 Target Type は [Requirements](../requirements/requirements.md) および [ADR-007](ADR-007-target-type-simplification.md) の ROOM / OTHER に従う。本 ADR 自体は superseded としない。
+
 ## Context
 
 Roomモデルの構造について検討した。
