@@ -17,6 +17,7 @@ const fields = document.querySelector("#create-fields");
 const targetType = document.querySelector("#target-type");
 const room = document.querySelector("#room");
 const target = document.querySelector("#target");
+const targetHistorySelect = document.querySelector("#target-history");
 const category = document.querySelector("#category");
 const description = document.querySelector("#description");
 const inputText = document.querySelector("#input-text");
@@ -34,6 +35,52 @@ let mediaRecorder = null;
 let mediaStream = null;
 let audioChunks = [];
 let recordingFailed = false;
+let targetHistory = [];
+
+function restoreInputAssistance() {
+  let saved;
+  try {
+    saved = JSON.parse(localStorage.getItem(`cim.inputAssistance.${selectedProject.id}`));
+  } catch {
+    return;
+  }
+  if (!saved || typeof saved !== "object" || Array.isArray(saved)) {
+    return;
+  }
+  for (const [select, value] of [[targetType, saved.target_type], [category, saved.category]]) {
+    if (typeof value === "string" && value &&
+        Array.from(select.options).some((option) => option.value === value)) {
+      select.value = value;
+    }
+  }
+  if (Number.isSafeInteger(saved.room_id) && saved.room_id > 0 &&
+      Array.from(room.options).some((option) => option.value === String(saved.room_id))) {
+    room.value = String(saved.room_id);
+  }
+  if (Array.isArray(saved.target_history)) {
+    targetHistory = saved.target_history.filter((value) => typeof value === "string" && value.trim());
+    for (const value of targetHistory) {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = value;
+      targetHistorySelect.append(option);
+    }
+  }
+}
+
+function saveInputAssistance(request) {
+  try {
+    const history = request.target_type === "OTHER" ? [...targetHistory, request.target] : targetHistory;
+    localStorage.setItem(`cim.inputAssistance.${selectedProject.id}`, JSON.stringify({
+      target_type: request.target_type,
+      room_id: request.room_id,
+      category: request.category,
+      target_history: history,
+    }));
+  } catch {
+    // Input Assistance failure must not turn a successful Issue Create into an error.
+  }
+}
 
 function showError(message) {
   errorMessage.textContent = message;
@@ -88,6 +135,8 @@ function updateTargetFields() {
   room.required = isRoom;
   target.disabled = !isOther;
   target.required = isOther;
+  document.querySelector("#target-history-field").hidden = !isOther || targetHistory.length === 0;
+  targetHistorySelect.disabled = !isOther;
 }
 
 function validateInputs(forDraft) {
@@ -263,6 +312,7 @@ async function createIssue(event) {
     if (!Number.isSafeInteger(response?.id) || response.id <= 0) {
       throw new Error("Invalid Issue Create response.");
     }
+    saveInputAssistance(request);
     ready = false;
     window.location.assign(`/issue.html?issue_id=${response.id}`);
   } catch (error) {
@@ -293,6 +343,7 @@ async function initialize() {
       room.append(option);
     }
     document.querySelector("#room-empty").hidden = response.rooms.length !== 0;
+    restoreInputAssistance();
     updateTargetFields();
     ready = true;
   } catch (error) {
@@ -321,6 +372,11 @@ async function performLogout() {
 targetType.addEventListener("change", () => {
   clearErrors();
   updateTargetFields();
+});
+targetHistorySelect.addEventListener("change", () => {
+  if (targetType.value === "OTHER" && targetHistorySelect.value) {
+    target.value = targetHistorySelect.value;
+  }
 });
 form.addEventListener("submit", createIssue);
 document.querySelector("#generate-draft-button").addEventListener("click", generateDraft);
