@@ -1,9 +1,11 @@
 # ADR-002: TargetType Definition
 
-- **Status:** Accepted
+- **Status:** Superseded
 - **Date:** 2026-06-30
 - **Category:** Domain
 - **Decision Makers:** Masato Nagata
+
+本 ADR の旧5種類の Target Type decision は [ADR-007: Target Type Simplification](ADR-007-target-type-simplification.md) により superseded された。以下の本文は過去の意思決定記録として保持する。
 
 ## Context
 

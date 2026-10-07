@@ -40,10 +40,11 @@ ADRは以下のような判断を対象とする。
 | ADR     |   Status   | Category  | Title                   | Decision Summary                                               |
 | ------- | :--------: | --------- | ----------------------- | -------------------------------------------------------------- |
 | ADR-001 | ✅ Accepted | Principle | User in Control         | AIは補助機能とし、最終判断はユーザーが行う。                                        |
-| ADR-002 | ✅ Accepted | Domain    | TargetType Definition   | TargetTypeは ROOM / ROOM_TYPE / AREA / HOTEL / GENERAL の5種類とする。 |
+| ADR-002 | Superseded | Domain    | TargetType Definition   | 旧5種類の決定。後継は [ADR-007](ADR-007-target-type-simplification.md)。 |
 | ADR-003 | ✅ Accepted | Domain    | Category Definition     | Categoryは「ユーザーが最初に認識した対象（一次対象）」を表す。                            |
 | ADR-004 | ✅ Accepted | Domain    | Room Model Design       | RoomはRoomTypeを参照し、floor_numberを保持しない。                          |
 | ADR-005 | ✅ Accepted | Domain    | Issue as Aggregate Root | IssueをAggregate Rootとし、Comment・AttachmentはIssue配下で管理する。        |
+| ADR-007 | ✅ Accepted | Domain    | Target Type Simplification | Target Type は ROOM / OTHER。ユーザーが決定し、AI は決定・推測しない。ADR-002 の後継。 |
 
 ---
 
