@@ -1,8 +1,8 @@
 # CIM Test Design
 
-- **Document Version:** 1.3
+- **Document Version:** 1.4
 - **Status:** Draft
-- **Last Updated:** 2026-10-07
+- **Last Updated:** 2026-10-08
 - **Author:** Masato Nagata
 
 ---
@@ -16,6 +16,7 @@
 |1.2|2026-07-14|Align test design with Requirements v1.2, API Design, UI Design, and Detailed Design. Add validation, AI Draft, attachment, and business rule test cases.|
 |1.3|2026-09-29|Add Local Speech Recognition / Speech Transcription tests, separation from AI Draft, Japanese Description, and User in Control coverage.|
 |1.3|2026-10-07|Add UI verification cases for Project-scoped Input Assistance, Issue Edit isolation, and localStorage failures.|
+|1.4|2026-10-08|Add Administration CLI, service and repository tests, including bootstrap, Administrator protection, transactions, and exit codes.|
 
 ---
 
@@ -64,6 +65,7 @@
 - File Upload Test
 - Error Handling Test
 - Authorization Test
+- Administration CLI Test
 
 以下は対象外とする。
 
@@ -127,6 +129,7 @@ Local Speech Recognition / Speech Transcription は AI Draft と独立した機�
 - Repository Test
 - API Test
 - Validation Test
+- Administration CLI Test
 - username にメールアドレス形式を利用できること
 
 UI の詳細操作は初期版では手動テストを中心とする。
@@ -356,6 +359,43 @@ Local Speech Recognition boundary を Mock / Stub 化し、Detailed Design 10.10
 
 ---
 
+## 8.9 AdministrationService
+
+Detailed Design 10.11 に従い、Repository、認証・ハッシュ処理および Transaction 境界を Mock 化して Service の責務を検証する。実 DB での永続化・rollback・同時実行は9.5で検証する。
+
+|テスト項目|内容|
+|---|---|
+|Create Hotel|name を指定して登録し、整数 ID と操作結果を返すこと|
+|Update Hotel|name を更新し、ID と created_at を維持すること|
+|Create Project|存在する Hotel と name を指定して登録できること|
+|Update Project|name を更新し、hotel_id を維持すること|
+|Create RoomType|存在する Hotel と name を指定して登録できること|
+|Update RoomType|name を更新し、hotel_id を維持すること|
+|Create Room|同一 Hotel の RoomType と room_number で登録し、display_name 省略時は null とすること|
+|Update Room|room_number / display_name / 同一 Hotel の room_type_id を更新し、hotel_id を維持すること|
+|Create User|username、display_name、Role、新しい Password を受け取り、既存 hash_password を利用して登録すること。メールアドレス形式の username も利用できること|
+|Update User|username / display_name / Role / Password を指定した項目だけ更新し、省略した Role と Password Hash を維持すること|
+|Partial Update|各対象で省略項目を維持し、ID / created_at を変更せず、変更時の updated_at は既存 UTC 方針に従うこと|
+|No Update Fields|更新項目を指定しない場合はデータと Timestamp を維持して成功とすること|
+|Authentication|通常操作は毎回 AuthService.login を利用し、username 不存在と Password 不一致を同じ AuthenticationError とすること|
+|Authorization|5対象の create / update を Engineer は実行できず、AuthorizationError とすること。未認証・権限不足では書き込まないこと|
+|Bootstrap Empty|User が0件の場合だけ未認証で bootstrap でき、Role は ADMINISTRATOR に固定されること|
+|Bootstrap Existing User|Administrator または Engineer が1件でも存在する場合は BusinessRuleError とし、User を追加しないこと。Administrator が0人でも既存 User があれば拒否すること|
+|Last Administrator|最後の Administrator の ENGINEER への変更は、自身を対象とする場合も BusinessRuleError とし、他の同時指定項目も保存しないこと|
+|Multiple Administrators|Administrator が2人以上なら1人以上残る範囲で ENGINEER への変更を許可すること|
+|Other Role Changes|Role 維持、ENGINEER から ADMINISTRATOR への変更、Administrator の追加は成功すること|
+|Service Protection|CLI を経由しない update_user 呼び出しでも最後の Administrator 保護を適用すること|
+|Required Fields and Types|登録必須項目の欠落、NULL 不可項目への null、不正な型 / Role を拒否すること。独自の一意性・文字数制限・Password policy を追加していないこと|
+|Not Found|5対象それぞれの存在しない更新 ID と、存在しない参照 Hotel / RoomType を拒否すること|
+|Hotel Consistency|Room 登録・RoomType 変更で別 Hotel の RoomType を拒否すること。Project / RoomType / Room の所属 Hotel を変更する入力を拒否すること|
+|Duplicate Username|登録・更新とも別 User の username と重複する場合は失敗し、自身の username を維持する更新は成功すること|
+|Duplicate Room Number|登録・更新とも同一 Hotel 内の別 Room と重複する場合は失敗し、自身の番号の維持と別 Hotel の同じ番号は成功すること|
+|Duplicate Names Allowed|Hotel / Project / RoomType の name に独自の重複禁止を設けないこと|
+|Transaction|1コマンドに同じ Session を使用し、成功時は1回 commit、認証・権限・検証・flush・commit 失敗時は rollback すること|
+|Safe Result|成功結果に ORM Entity、Password、Password Hash を含めないこと|
+
+---
+
 # 9. Repository Test
 
 本章では、Repository Layer のテストを定義する。
@@ -409,6 +449,29 @@ Local Speech Recognition boundary を Mock / Stub 化し、Detailed Design 10.10
 |Delete|削除|
 |Find By ID|ID 検索|
 |List By Issue|Issue 検索|
+
+---
+
+## 9.5 Administration Persistence and Transactions
+
+Detailed Design 11.2～11.5、11.9 の既存 Repository の追加書き込み操作と RoomTypeRepository を対象とする。実際の SQLite を利用し、Service を組み合わせた Transaction 検証も行う。同時実行では一時ファイルの SQLite DB と独立した Session / 接続を利用する。
+
+|テスト項目|内容|
+|---|---|
+|Create / Update|Hotel / Project / RoomType / Room / User の登録・更新を commit 後に別 Session から取得して確認すること|
+|RoomType Lookup|整数 ID で取得でき、存在しない ID では None を返すこと|
+|User Counts|count_all と count_by_role が空 DB、Administrator / Engineer 混在、Role 更新後の件数を正しく返すこと|
+|Password Hash|登録・変更 Password は平文保存されず、既存 verify_password で検証できること。更新省略時は Hash が変わらないこと|
+|DB Constraints|username と (hotel_id, room_number) の一意制約、必須カラム、Role の CHECK 制約を維持すること|
+|References|既存外部キーに従って有効な参照を保存すること。Service 経由では存在しない Hotel / RoomType、異なる Hotel の RoomType を拒否し、DB 状態を変更しないこと|
+|No Repository Commit|Repository は flush までとし、呼び出し側の rollback で登録・更新を取り消せること|
+|Failure Rollback|Service の検証、既存 DB 制約、flush または commit による失敗後に、新規行・変更値・updated_at が残らないこと。5対象の登録・更新を対象とすること|
+|Last Administrator Rollback|拒否した Role 変更と同時指定した username / display_name / Password がすべて元の状態を維持すること|
+|Concurrent Bootstrap|User が0件の DB に対する2つの bootstrap で、最大1件だけ作成されること。後続は既存 User の検証またはロック取得失敗で終了すること|
+|Concurrent Demotion|Administrator が2人の状態で同時に別々の Administrator を降格しても、最低1人が残ること。認証・件数確認前に書き込み Transaction を開始すること|
+|Lock Failure|書き込みロック取得失敗時は保存せず、失敗として rollback / close すること|
+
+DB schema や Migration は変更しない。Service の参照検証と DB 自体の制約検証は区別し、外部キー制約の検証時はテスト接続で SQLite の外部キー検証を有効にする。
 
 ---
 
@@ -899,6 +962,30 @@ Speech Transcription は認証を必要とし、ENGINEER / ADMINISTRATOR の双�
 
 - 未認証ユーザーは 401 Unauthorized を返すこと
 - 権限不足ユーザーは 403 Forbidden を返すこと
+
+---
+
+## 15.4 Administration CLI
+
+Detailed Design 10.11 に従う。引数解析・表示・終了コードは CLI entry point の自動テストで検証し、`getpass` は Mock 化する。永続化を含む代表的な実行は専用 SQLite と擬似端末付き subprocess を利用し、`backend/` から `uv run python -m app.cli ...` で検証する。端末の非表示入力は実装後に手動で確認する。
+
+|テスト項目|内容|
+|---|---|
+|Command Coverage|hotel / project / room-type / room / user の create / update と user bootstrap-admin を実行できること|
+|Integer IDs|更新対象 ID と参照 ID は整数で解析し、非整数では終了コード2となること|
+|Required Arguments|必須引数不足、不明なコマンド / 引数、不正な Role は終了コード2となり、Password 入力と DB 書き込みを行わないこと|
+|Unsupported Operations|CSV、delete、所属 Hotel の更新、bootstrap の Role 指定、コマンドライン Password 指定を受け付けないこと|
+|Administrator Credentials|通常操作は --admin-username が必須で、毎回 getpass で認証 Password を入力すること。CLI 内に認証状態を保存しないこと|
+|New Password|User create / bootstrap / --set-password では認証用と区別した非表示プロンプトを使用し、User update で省略時は新しい Password を要求しないこと|
+|Hidden Input Failure|getpass の非表示入力が利用できない場合、入力中断・EOF の場合は終了コード1とし、表示入力へ fallback せず DB を変更しないこと|
+|Success Exit|commit 成功後だけ対象と整数 ID を stdout に表示し、終了コード0となること|
+|Failure Exit|認証・権限・Service 検証・bootstrap 禁止・最後の Administrator 保護・DB / ロック処理失敗は stderr に安全なメッセージを表示し、終了コード1となること|
+|Help|--help は終了コード0となり、認証・DB 書き込みを行わないこと|
+|Safe Output|stdout / stderr / ログに Password、Password Hash、DB 接続情報、SQL、パラメーター、traceback を出さないこと。DB 例外の生文字列を表示しないこと|
+|Authentication Message|username 不存在と Password 不一致で同じ安全なメッセージを表示すること|
+|Session Cleanup|成功・失敗の双方で Session を close し、失敗時に成功メッセージを表示しないこと|
+
+CLI の失敗に HTTP status は適用しない。15.3 の401 / 403は既存 HTTP API の検証とし、Administration CLI は上記終了コードで検証する。
 
 ---
 

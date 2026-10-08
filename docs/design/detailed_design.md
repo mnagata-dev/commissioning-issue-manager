@@ -1,8 +1,8 @@
 # CIM Detailed Design
 
-- **Document Version:** 1.3
+- **Document Version:** 1.4
 - **Status:** Draft
-- **Last Updated:** 2026-10-07
+- **Last Updated:** 2026-10-08
 - **Author:** Masato Nagata
 
 ---
@@ -17,6 +17,7 @@
 |1.3|2026-09-29|Align with Requirements, Basic Design, API Design and UI Design v1.3, and updated ADR-001. Define Local Speech Recognition and SpeechService responsibilities separately from AI Draft generation.|
 |1.3|2026-09-30|Define whisper-cli invocation, audio normalization with ffmpeg, temporary file handling, and executable/model path configuration.|
 |1.3|2026-10-07|Define Project-scoped localStorage persistence, restoration, and failure handling for Input Assistance.|
+|1.4|2026-10-08|Define Administration CLI, service validation, repository writes, bootstrap, and Administrator protection in line with Requirements v1.4.|
 
 ---
 
@@ -65,6 +66,7 @@
 - Validation
 - Error Handling
 - Authentication / Authorization
+- Administration CLI
 - AI Service
 - Speech Service / Local Speech Recognition
 - File Storage
@@ -122,6 +124,14 @@ Repository
 Database
 ```
 
+Administration CLI は以下の構成とし、HTTP API を経由しない。
+
+```text
+CLI → AdministrationService → Repository → SQLite
+```
+
+CLI は引数解析、非表示入力、依存関係の組み立て、結果表示および終了コードへの変換を担当する。認証・認可、入力検証、業務ルールおよび Transaction 管理は AdministrationService が担当する。
+
 AI 連携および File Storage は Service Layer から利用する。
 
 ```text
@@ -159,6 +169,10 @@ Backend のディレクトリ構成を以下に示す。
 backend/
 ├── app/
 │   ├── main.py
+│   ├── cli/
+│   │   ├── __init__.py
+│   │   └── __main__.py
+│   │
 │   ├── core/
 │   │   ├── config.py
 │   │   ├── security.py
@@ -193,6 +207,7 @@ backend/
 │   │
 │   ├── schemas/
 │   │   ├── auth.py
+│   │   ├── administration.py
 │   │   ├── project.py
 │   │   ├── room.py
 │   │   ├── issue.py
@@ -203,6 +218,7 @@ backend/
 │   │
 │   ├── services/
 │   │   ├── auth_service.py
+│   │   ├── administration_service.py
 │   │   ├── project_service.py
 │   │   ├── room_service.py
 │   │   ├── issue_service.py
@@ -214,6 +230,8 @@ backend/
 │   │
 │   ├── repositories/
 │   │   ├── user_repository.py
+│   │   ├── hotel_repository.py
+│   │   ├── room_type_repository.py
 │   │   ├── project_repository.py
 │   │   ├── room_repository.py
 │   │   ├── issue_repository.py
@@ -815,6 +833,7 @@ Service Layer は業務ロジックを担当し、API RouterとRepository Layer 
 |Service|責務|
 |---|---|
 |AuthService|認証処理|
+|AdministrationService|CLI 管理操作の認証・認可、登録・更新、bootstrap および Transaction 管理|
 |ProjectService|Project 取得|
 |RoomService|Room 一覧取得|
 |IssueService|Issue 登録・更新・参照|
@@ -1256,6 +1275,113 @@ SQLAlchemy Session および Repository には依存せず、commit / rollback �
 
 ---
 
+## 10.11 AdministrationService / CLI
+
+### Invocation and Commands
+
+Python 標準ライブラリの `argparse` を使用する。`backend/` から以下の形式で実行する。
+
+```bash
+uv run python -m app.cli <target> <operation> ...
+uv run python -m app.cli user bootstrap-admin --username admin --display-name Administrator
+uv run python -m app.cli hotel create --admin-username admin --name "Example Hotel"
+uv run python -m app.cli room update 10 --admin-username admin --room-type-id 2
+```
+
+通常操作では各 `create` / `update` コマンドに `--admin-username` を必須指定する。更新対象の `id` は位置引数とし、整数で指定する。所属先の ID も整数で指定する。
+
+DB 接続設定と Session の生成には既存 `app/core/config.py` と `app/db/session.py` を利用する。既存 Migration 適用済みの DB を対象とし、CLI が Table 作成や Migration を自動実行することはない。
+
+|Target|Operation|登録時の必須引数|登録時の任意引数 / 更新可能な引数|
+|---|---|---|---|
+|`hotel`|`create` / `update <id>`|`--name`|更新: `--name`|
+|`project`|`create` / `update <id>`|`--hotel-id`, `--name`|更新: `--name`|
+|`room-type`|`create` / `update <id>`|`--hotel-id`, `--name`|更新: `--name`|
+|`room`|`create` / `update <id>`|`--hotel-id`, `--room-type-id`, `--room-number`|登録: `--display-name`; 更新: `--room-type-id`, `--room-number`, `--display-name`|
+|`user`|`create` / `update <id>`|`--username`, `--display-name`, `--role`|更新: `--username`, `--display-name`, `--role`, `--set-password`|
+|`user`|`bootstrap-admin`|`--username`, `--display-name`|なし（Role は `ADMINISTRATOR` に固定）|
+
+`--role` は `ADMINISTRATOR` / `ENGINEER` のみ受け付ける。`bootstrap-admin` に `--role` や `--admin-username` は指定しない。Password を渡すコマンドライン引数は提供しない。
+
+更新で省略した項目は維持する。`--role` と `--set-password` の省略時は現在の Role と Password Hash を維持する。更新項目を指定しない場合は成功扱いとし、データおよび Timestamp を変更しない。Room 登録で `--display-name` を省略した場合は null とする。更新時の省略と明示指定を区別し、null へ戻す専用操作は追加しない。
+
+User 登録と bootstrap の Password は非表示入力による必須の入力値とする。`--set-password` は値を取らないフラグとし、指定時だけ新しい Password を入力する。
+
+Project / RoomType / Room の更新に `--hotel-id` は提供せず、所属 Hotel を変更しない。Room の RoomType 変更は同一 Hotel 内に限定する。
+
+CSV、Web 管理画面、Administration Web API、削除操作、DB schema 変更および汎用 CRUD framework は本設計の対象外とする。
+
+### Input and Authentication
+
+CLI は通常操作ごとに、操作する Administrator の Password を `getpass.getpass()` で非表示入力する。User 登録・bootstrap および `--set-password` 指定時は、対象 User の新しい Password を別のプロンプトで非表示入力する。認証用 Password と登録・変更用 Password を区別する。
+
+非表示入力が利用できない場合は、表示入力への fallback を行わず失敗とする。入力中断・EOF は失敗とし、書き込みを行わない。Password の入力は DB Transaction 開始前に完了する。
+
+AdministrationService は同じ SQLAlchemy Session を使用する既存 `AuthService.login()` で毎回認証し、返された Role が `ADMINISTRATOR` であることを検証する。Username 不存在と Password 不一致は共通の `AuthenticationError`、Engineer は `AuthorizationError` とする。CLI は Cookie-based Session を作成・保存しない。
+
+新しい Password は既存 `app/core/security.py` の `hash_password()` でハッシュ化する。独自の長さ・複雑性・確認入力などの Password policy は追加しない。
+
+### Service Methods and DTOs
+
+`app/schemas/administration.py` に管理対象ごとの Create / Update DTO を定義する。型と必須項目は上記の引数および Database Design 6.1～6.5 に合わせる。更新 DTO は項目の指定有無を保持し、省略値を既存 Entity に上書きしない。Password を含む入力 DTO を出力・ログ用データとして使用しない。
+
+名前・username・room_number・display_name・Password は文字列、参照 ID は整数、Role は既存 `Role` Enum とする。Room の display_name のみ null を許可する。更新 DTO は省略を許可するが、指定された NULL 不可項目への null は拒否する。更新で hotel_id など更新対象外の項目を渡した場合も拒否する。
+
+AdministrationService は対象ごとの専用メソッドを持つ。
+
+```text
+create_hotel / update_hotel
+create_project / update_project
+create_room_type / update_room_type
+create_room / update_room
+create_user / update_user
+bootstrap_admin
+```
+
+通常メソッドは操作する Administrator の username / password と対象の DTO、更新時は対象 ID を受け取る。`bootstrap_admin` は新規 User の入力だけを受け取る。成功結果は対象の種類、整数 ID および操作結果のみとし、ORM Entity や Password Hash を CLI 出力へ渡さない。
+
+### Validation and Business Rules
+
+必須項目・型・NULL 可否・Role は既存モデルと Database Design に合わせ、DTO と Service Layer で検証する。独自の文字数制限、値の正規化、一意性制約および Password policy は追加しない。ID と Timestamp は利用者に入力させず、Timestamp は8.5に従う。
+
+|対象|Service Layer の検証|
+|---|---|
+|共通|更新対象が存在すること。存在しない対象は `NotFoundError` とする。|
+|Project / RoomType|登録先 Hotel が存在すること。更新では所属 Hotel を維持する。|
+|Room|Hotel と RoomType が存在し、RoomType が同一 Hotel に属すること。更新時は変更後の値で検証する。|
+|User|username が一意であること。メールアドレス形式も利用可能とする。Role は既存 Enum に従う。|
+|Room Number|同一 Hotel 内で room_number が一意であること。別 Hotel では同じ番号を許可する。|
+
+重複検証には既存の `find_by_username()` / `find_by_hotel_and_room_number()` を利用する。更新対象自身と同じ ID の一致は重複扱いにしない。Hotel / Project / RoomType の name に一意性制約は追加しない。Service での重複検証に加え、既存 DB 制約違反も失敗として rollback する。
+
+`bootstrap_admin()` は User が0件の場合だけ許可する。既存 User が1件でもある場合は Role にかかわらず `BusinessRuleError` とし、作成しない。成功時は Role を `ADMINISTRATOR` に固定する。これは空 DB の初期登録であり、既存 User がいて Administrator が0人の場合の復旧機能ではない。
+
+Requirements v1.4 7.14 に従い、User の Role 変更で Administrator を最低1人維持する。現在の Role が `ADMINISTRATOR` で変更後が `ENGINEER` の場合、Administrator 件数が1件なら `BusinessRuleError` とし、2件以上なら変更を許可する。自身の Role 変更にも同じルールを適用する。Role 維持、Engineer から Administrator への変更、Administrator の追加は許可する。
+
+この保護は CLI の引数解析だけで行わず、User 管理の Service Layer に適用する。将来別の入力経路を設ける場合も同じルールを適用する。
+
+### Transaction and Concurrency
+
+1コマンドを1 Transaction とし、AdministrationService が認証・認可、存在確認、業務検証、書き込みおよび commit を同じ SQLAlchemy Session で管理する。成功時に1回 commit、認証・権限・検証・flush・commit 等の失敗時に rollback する。CLI は Session を生成し、処理後に必ず close する。引数解析・入力中断など Transaction 開始前の失敗では DB を変更しない。
+
+User 操作（bootstrap を含む）は最初の DB 読み取り前に SQLite の `BEGIN IMMEDIATE` で書き込み Transaction を開始する。件数確認、認証時の Role 取得、Role 変更および commit を同一 Transaction 内で行い、同時 bootstrap や複数 Administrator の同時降格で制限を破らない。SQLite 固有の開始処理は `app/db/session.py` に置き、AdministrationService が利用する。Repository に認証・件数判定の業務ルールを持たせない。他の管理対象は通常の Transaction を使用する。
+
+書き込みロックを取得できない場合も DB 処理失敗とし、成功扱いにしない。自動再試行やスキーマ変更は追加しない。
+
+### Output and Exit Codes
+
+|終了コード|意味|
+|---|---|
+|0|成功（`--help` による正常終了も含む）|
+|1|認証・権限・入力検証・業務ルール・DB 処理・非表示入力等の失敗|
+|2|`argparse` による使用方法エラー（必須引数不足、不明なコマンド / 引数、整数変換失敗、Role の choices 違反等）|
+
+成功は commit 後に stdout へ対象と ID を表示する。失敗は stderr へ利用者向けメッセージを表示する。既存のアプリケーション例外を利用し、CLI の失敗は終了コード1へ変換する。CLI に HTTP status を適用しない。
+
+Password、Password Hash、DB 接続情報、SQL、パラメーターおよび traceback を通常出力しない。DB 例外は安全な共通メッセージへ変換し、認証失敗で username の存在有無を区別しない。ログにも Password / Password Hash を記録しない。
+
+---
+
 # 11. Repository Design
 
 本章では、Repository Layer の設計を定義する。
@@ -1270,10 +1396,11 @@ Hotel の存在確認が必要な処理では、HotelRepository を使用する�
 
 |Repository|責務|
 |---|---|
-|UserRepository|User 取得|
-|ProjectRepository|Project 取得（Hotel 情報を含む）|
-|HotelRepository|Hotel 取得|
-|RoomRepository|Room 取得|
+|UserRepository|User 取得・件数取得・登録・更新|
+|ProjectRepository|Project 取得（Hotel 情報を含む）・登録・更新|
+|HotelRepository|Hotel 取得・登録・更新|
+|RoomTypeRepository|RoomType 取得・登録・更新|
+|RoomRepository|Room 取得・登録・更新|
 |IssueRepository|Issue 取得・登録・更新|
 |CommentRepository|Comment 登録・取得|
 |AttachmentRepository|Attachment 登録・取得・削除|
@@ -1286,6 +1413,14 @@ Hotel の存在確認が必要な処理では、HotelRepository を使用する�
 find_by_id(user_id: int) -> User | None
 
 find_by_username(username: str) -> User | None
+
+count_all() -> int
+
+count_by_role(role: Role) -> int
+
+create(user: User) -> User
+
+update(user: User) -> User
 ```
 
 ---
@@ -1296,6 +1431,10 @@ find_by_username(username: str) -> User | None
 find_by_id(project_id: int) -> Project | None
 
 list_all() -> list[Project]
+
+create(project: Project) -> Project
+
+update(project: Project) -> Project
 ```
 
 ---
@@ -1304,6 +1443,10 @@ list_all() -> list[Project]
 
 ```python
 find_by_id(hotel_id: int) -> Hotel | None
+
+create(hotel: Hotel) -> Hotel
+
+update(hotel: Hotel) -> Hotel
 ```
 
 ---
@@ -1319,6 +1462,10 @@ find_by_hotel_and_room_number(
 ) -> Room | None
 
 list_by_hotel(hotel_id: int) -> list[Room]
+
+create(room: Room) -> Room
+
+update(room: Room) -> Room
 ```
 
 初期版では Room 検索機能を提供しないため、Room 名や Room Number による検索メソッドは定義しない。
@@ -1382,6 +1529,22 @@ create(attachment: Attachment) -> Attachment
 
 delete(attachment: Attachment) -> None
 ```
+
+---
+
+## 11.9 RoomTypeRepository / Administration Writes
+
+```python
+find_by_id(room_type_id: int) -> RoomType | None
+
+create(room_type: RoomType) -> RoomType
+
+update(room_type: RoomType) -> RoomType
+```
+
+既存 Repository の取得処理を再利用し、必要な書き込み操作だけを追加する。各 Repository は同じ SQLAlchemy Session を使用する。`create()` は Entity を add / flush し、`update()` は Service が変更した Entity を flush して返す。commit / rollback は行わない。
+
+User の件数メソッドは DB の件数を返すだけとし、bootstrap の許可や最後の Administrator の判定は AdministrationService が行う。
 
 ---
 
