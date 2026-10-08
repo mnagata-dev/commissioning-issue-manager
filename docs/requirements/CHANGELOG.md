@@ -22,6 +22,7 @@
 |1.1|2026-07-03|Reflect reviewed requirements changes|
 |1.2|2026-07-08|Refine the system architecture, clarify the domain model, redefine AI responsibilities, and improve the document as the primary design specification for the project.|
 |1.3|2026-09-29|Clarify offline operation, local voice transcription, and Japanese Description generation.|
+|1.4|2026-10-08|Require at least one Administrator to remain across User management.|
 
 ---
 
@@ -143,6 +144,29 @@
 ### Removed
 
 - Offline Operation を初期版の要件として定義したため、将来拡張の Offline Support を削除した。
+
+---
+
+## Version 1.4
+
+### Added
+
+- Administrator を最低1人維持する要件を追加した。
+- 最後の Administrator を Engineer に変更する操作を禁止する要件を追加した。
+- Administrator が2人以上いる場合は、変更後も最低1人残る範囲で Administrator から Engineer への変更を許可する要件を追加した。
+- この制限は Administration CLI 固有ではなく、User 管理全体に適用する要件を追加した。
+
+---
+
+### Changed
+
+なし
+
+---
+
+### Removed
+
+なし
 
 ---
 

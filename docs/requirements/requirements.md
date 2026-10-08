@@ -1,8 +1,8 @@
 # CIM Requirements Specification
 
-- **Document Version:** 1.3
+- **Document Version:** 1.4
 - **Status:** Draft
-- **Last Updated:** 2026-09-29
+- **Last Updated:** 2026-10-08
 - **Author:** Masato Nagata
 
 ---
@@ -15,6 +15,7 @@
 |1.1|2026-07-03|Reflect updated login specification and master data terminology.|
 |1.2|2026-07-08|Refine the system architecture, clarify the domain model, redefine AI responsibilities, and improve the document as the primary design specification for the project.|
 |1.3|2026-09-29|Clarify offline operation, local voice transcription, and Japanese Description generation.|
+|1.4|2026-10-08|Require at least one Administrator to remain across User management.|
 
 ---
 
@@ -584,6 +585,14 @@ Administrator は以下を管理する。
 - Project
 - User
 - Master Data
+
+CIM は Administrator を最低1人維持する。
+
+最後の Administrator を Engineer に変更する操作は禁止する。
+
+Administrator が2人以上いる場合は、変更後も最低1人残る範囲で Administrator から Engineer への変更を許可する。
+
+このルールは Administration CLI 固有ではなく、User 管理全体に適用する。
 
 初期版では Web UI による管理機能は提供しない。
 
