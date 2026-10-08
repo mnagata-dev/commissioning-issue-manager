@@ -6,6 +6,7 @@ from app.repositories.hotel_repository import HotelRepository
 from app.repositories.issue_repository import IssueRepository
 from app.repositories.project_repository import ProjectRepository
 from app.repositories.room_repository import RoomRepository
+from app.repositories.room_type_repository import RoomTypeRepository
 from app.repositories.user_repository import UserRepository
 
 __all__ = [
@@ -15,5 +16,6 @@ __all__ = [
     "IssueRepository",
     "ProjectRepository",
     "RoomRepository",
+    "RoomTypeRepository",
     "UserRepository",
 ]

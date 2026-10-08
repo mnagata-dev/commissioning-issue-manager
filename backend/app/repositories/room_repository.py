@@ -29,3 +29,12 @@ class RoomRepository:
             .order_by(Room.id.asc())
         )
         return list(self.session.scalars(statement))
+
+    def create(self, room: Room) -> Room:
+        self.session.add(room)
+        self.session.flush()
+        return room
+
+    def update(self, room: Room) -> Room:
+        self.session.flush()
+        return room

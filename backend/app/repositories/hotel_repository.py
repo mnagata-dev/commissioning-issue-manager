@@ -11,3 +11,12 @@ class HotelRepository:
 
     def find_by_id(self, hotel_id: int) -> Hotel | None:
         return self.session.get(Hotel, hotel_id)
+
+    def create(self, hotel: Hotel) -> Hotel:
+        self.session.add(hotel)
+        self.session.flush()
+        return hotel
+
+    def update(self, hotel: Hotel) -> Hotel:
+        self.session.flush()
+        return hotel

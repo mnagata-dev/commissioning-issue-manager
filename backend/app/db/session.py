@@ -4,6 +4,7 @@ from collections.abc import Generator
 
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
+from sqlalchemy.exc import InvalidRequestError
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import settings
@@ -30,3 +31,10 @@ def get_db_session() -> Generator[Session, None, None]:
         yield session
     finally:
         session.close()
+
+
+def begin_user_write_transaction(session: Session) -> None:
+    """Serialize User validation and writes before the first database read."""
+    if session.in_transaction():
+        raise InvalidRequestError("A User command requires a fresh transaction.")
+    session.connection().exec_driver_sql("BEGIN IMMEDIATE")
