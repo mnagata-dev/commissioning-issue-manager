@@ -25,3 +25,12 @@ class ProjectRepository:
             .order_by(Project.id.asc())
         )
         return list(self.session.scalars(statement))
+
+    def create(self, project: Project) -> Project:
+        self.session.add(project)
+        self.session.flush()
+        return project
+
+    def update(self, project: Project) -> Project:
+        self.session.flush()
+        return project

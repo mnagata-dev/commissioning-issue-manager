@@ -1,0 +1,1 @@
+"""Administration command-line interface."""
