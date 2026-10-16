@@ -132,3 +132,166 @@ T01の1サンプルの実測値（性能合格値の定義ではない）:
 ```
 
 コミット・push・PR作成・Mergeは実施していない。
+
+
+## 8. 2026-10-16 オンライン基本試験（初回公開時の記録）
+
+今回の対象は1台のWindows PCとWSL2。既存のローカル模擬試験結果とは分けて記録する。
+
+- run: `run-636292f1-c205-4f01-8605-99c653034dec`
+- ローカル証拠・独立DB: `<VALIDATION_WORK_DIR>`（自動削除なし。一時領域なので再起動等による消失に注意）
+- 同期先: 指定の `<ONEDRIVE_SYNC_ROOT>` 内の上記runのみ。outbound/inboundを新規作成。
+- 存在確認、新規サブフォルダー作成、outboundへの2ファイルの排他的新規書込み・読戻し: 合格。
+- Aのイベントを既存Peerでローカル生成・公開し、完成jsonlとmanifestだけを共有outboundに公開。共有読戻しは両方とも元バイト列と一致。
+- 逆方向用Bイベントは同期外の `b/outgoing` に生成済み。ブラウザーアップロードは未実施。
+- SharePointブラウザー上の反映、クラウドから取得したファイルの整合性、逆方向受信・適用・重複排除: 未実施（ユーザー操作待ち）。同期結果の不合格はまだ観測していない。
+- OneDrive同期遅延: 未測定。以下はローカル処理の時間であり、同期遅延ではない。
+- A保存: 0.246 ms、ローカルpublish: 0.248 ms、ローカルpublish後から共有manifest書込み完了まで: 37.071 ms（読戻し等の操作も含む）。
+- jsonl書込み完了: 2026-10-16 03:07:54.486596 UTC（12:07:54.486596 JST）。manifest書込み完了: 03:07:54.508158 UTC（12:07:54.508158 JST）。
+- Windows/OneDrive版・OneDrive表示状態・Files On-Demandの現設定は未取得。設定変更・停止・切断はしていない。
+- 既存CIMコード・DB・マイグレーション、既存共有ファイル、未追跡添付画像は変更していない。アプリのUnit/Service/Repository/APIテストは対象コード変更がないため未実行。commit/push/PR/Mergeなし。
+- 2台間の実機同期は未検証。Phase 1合格・導入承認ではない。
+
+### ファイル証拠
+
+|方向|ファイル|bytes|SHA-256|
+|---|---|---|---|
+|a|`007c22f5-10a4-4807-a7e0-77dc32a795df.jsonl`|287|`6bff71fd08450e0712abd95f6ce36886ea3d568bb1e3e0fff337e790868ca490`|
+|a|`007c22f5-10a4-4807-a7e0-77dc32a795df.manifest`|176|`28731937ce6c5ba0ea2d6d3f6538e53e3eb9d3eec9d096beb922cde439e295b6`|
+|b|`1898c60a-bd0b-4941-af41-c3aa08d137ae.jsonl`|303|`71f014d7ab85c2abe502f5daee7ff5839b7b0dddb9e4202829e255278d96d800`|
+|b|`1898c60a-bd0b-4941-af41-c3aa08d137ae.manifest`|176|`18e2c7043a7002744a6ff2b8d5c0114798bce2955473ea2f4ac13cbc707e2eb4`|
+
+### 実行時ログ（同期外で採取、パス匿名化済み）
+
+`<ONEDRIVE_SYNC_ROOT>` は検証専用同期フォルダー、`<VALIDATION_WORK_DIR>` は同期対象外の検証用作業ディレクトリを示す。公開用にパスのみ置換し、日時・計測値・ID・ハッシュ・判定は維持した。
+
+```json
+{
+  "local": "<VALIDATION_WORK_DIR>",
+  "shared_run": "<ONEDRIVE_SYNC_ROOT>/run-636292f1-c205-4f01-8605-99c653034dec",
+  "platform": "Linux-6.18.33.1-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+  "python": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]",
+  "sqlite": "3.46.1",
+  "observations": [
+    {
+      "label": "shared_directories_created",
+      "utc": "2026-10-16T03:07:54.469791+00:00",
+      "monotonic": 10879.285131943
+    },
+    {
+      "label": "a_save_start",
+      "utc": "2026-10-16T03:07:54.470611+00:00",
+      "monotonic": 10879.285808274
+    },
+    {
+      "label": "a_saved",
+      "utc": "2026-10-16T03:07:54.470860+00:00",
+      "monotonic": 10879.286054751
+    },
+    {
+      "label": "a_published_locally",
+      "utc": "2026-10-16T03:07:54.471110+00:00",
+      "monotonic": 10879.286302776
+    },
+    {
+      "label": "shared_written_.jsonl",
+      "utc": "2026-10-16T03:07:54.486596+00:00",
+      "monotonic": 10879.301811427
+    },
+    {
+      "label": "shared_written_.manifest",
+      "utc": "2026-10-16T03:07:54.508158+00:00",
+      "monotonic": 10879.323374121
+    },
+    {
+      "label": "b_save_start",
+      "utc": "2026-10-16T03:07:54.516505+00:00",
+      "monotonic": 10879.331712136
+    },
+    {
+      "label": "b_saved",
+      "utc": "2026-10-16T03:07:54.516661+00:00",
+      "monotonic": 10879.331853822
+    },
+    {
+      "label": "b_published_locally",
+      "utc": "2026-10-16T03:07:54.516928+00:00",
+      "monotonic": 10879.332121775
+    }
+  ],
+  "files": [
+    {
+      "peer": "a",
+      "name": "007c22f5-10a4-4807-a7e0-77dc32a795df.jsonl",
+      "size": 287,
+      "sha256": "6bff71fd08450e0712abd95f6ce36886ea3d568bb1e3e0fff337e790868ca490",
+      "shared_readback_equal": true
+    },
+    {
+      "peer": "a",
+      "name": "007c22f5-10a4-4807-a7e0-77dc32a795df.manifest",
+      "size": 176,
+      "sha256": "28731937ce6c5ba0ea2d6d3f6538e53e3eb9d3eec9d096beb922cde439e295b6",
+      "shared_readback_equal": true
+    },
+    {
+      "peer": "b",
+      "name": "1898c60a-bd0b-4941-af41-c3aa08d137ae.jsonl",
+      "size": 303,
+      "sha256": "71f014d7ab85c2abe502f5daee7ff5839b7b0dddb9e4202829e255278d96d800"
+    },
+    {
+      "peer": "b",
+      "name": "1898c60a-bd0b-4941-af41-c3aa08d137ae.manifest",
+      "size": 176,
+      "sha256": "18e2c7043a7002744a6ff2b8d5c0114798bce2955473ea2f4ac13cbc707e2eb4"
+    }
+  ],
+  "a_event_id": "007c22f5-10a4-4807-a7e0-77dc32a795df",
+  "b_event_id": "1898c60a-bd0b-4941-af41-c3aa08d137ae",
+  "status": "local_publish_passed_browser_pending"
+}
+```
+
+## 9. 2026-10-16 クラウド経由の整合性・受信確認
+
+8章は初回公開時点の記録。本章でブラウザー操作後の結果を追記する。
+対象は同じ `run-636292f1-c205-4f01-8605-99c653034dec` のみ。
+
+### 観測の出所と時刻
+
+- ユーザー報告: outboundの2ファイルをSharePointブラウザーで16:59 JSTに表示確認。inboundへの2ファイルのアップロード完了は16:56 JST。OneDrive状態は正常（同期完了）。ブラウザー操作はエージェント自身では観測していない。
+- 前回公開時刻12:07:54 JSTから16:59 JSTまでの経過は4時間51分6秒（目視報告は分精度）。これは公開から目視確認までの経過時間であり、OneDrive同期遅延ではない。
+- エージェントによるファイル・DB検証開始: 2026-10-16 08:03:43.784800 UTC（17:03:43.784800 JST）。これは到着時刻ではない。
+- 正確な同期遅延は両方向とも未測定。mtime、同期完了表示、上記時刻差から到達時刻を推定しない。
+
+### 実行と判定
+
+前回の一時ディレクトリ、観測ログ、A/Bの検証用DB、共有runの存在を確認した。必要ファイルを新規生成・代替コピーせず使用した。受信前に両DBの `PRAGMA integrity_check` がok、applied/effectsが各0件であることを確認した。
+
+|項目|確認結果|判定|
+|---|---|---|
+|outbound経路|Aの公開→SharePointブラウザー表示・ダウンロード（ユーザー操作）→B incomingの2ファイルを確認|この1台・手動Web経路で合格|
+|inbound経路|Bの合成イベントをブラウザーでSharePointへアップロード（ユーザー操作）→Windows側OneDrive run/inboundの2ファイルをWSLから確認|この1台の受信経路で合格|
+|整合性|4ファイルのサイズ・SHA-256が8章の記録および各送信元outgoingと一致。manifestの版・batch_id・size・SHA-256・count、実体の件数・イベントID・batch_id・版も一致|合格|
+|Bの受信|`007c22f5-10a4-4807-a7e0-77dc32a795df` は初回applied。sample=oneを確認|合格|
+|Aの受信|`1898c60a-bd0b-4941-af41-c3aa08d137ae` は初回applied。reverse=from-webを確認|合格|
+|重複受信|各受信をさらに3回実行し、全6回duplicate。各DBのrecords/applied/effects/outboxの全内容が再受信前後で不変|合格|
+
+検証したファイルとSHA-256は8章のファイル証拠表の4行と同一。outboundの入力は `<VALIDATION_WORK_DIR>/b/incoming`、inboundの入力はWindows同期領域の対象run/inbound。共有フォルダーのローカル読戻しだけをクラウド経由成功の根拠にはしていない。クラウド経由の判断は、ユーザーのブラウザー操作報告と、操作後の対象ファイル・生成時証拠の照合に基づく。
+
+B incomingには2ファイルに付随する `:Zone.Identifier` も存在した。イベント入力には使用せず、本文を読み取らず、変更・削除しなかった。
+
+### 受信後の状態と証拠
+
+- A/Bともrecordsは2件（sample=one、reverse=from-web）で一致。各DBには受信分のapplied/effectsが各1件。自身の生成レコードは受信適用件数には含めない。
+- 各イベントは初回1回のみ適用され、重複による副作用増加は0件。不一致、例外、保留、隔離は今回の受信で発生していない。
+- 検証時刻、受信元パス、実測サイズ・SHA-256、適用結果・再受信結果・レコード内容は `<VALIDATION_WORK_DIR>/cloud-verification.json` に保存。DBと既存観測ログも保持した。一時領域なので長期保存は保証されない。
+- 今回変更したリポジトリファイルは本結果文書のみ。検証専用A/BのSQLiteに受信を適用し、同期外の証拠JSONを新規保存した。共有領域は読取りのみ。
+- 既存CIMコード・業務DB・マイグレーション、既存SharePointファイル、未追跡添付画像は変更・削除していない。OneDrive停止、回線切断、設定変更、commit/push/PR/Mergeは行っていない。
+- 今回は上記実機入力の検証と受信・重複試験を実施。既存ローカル9テストおよびCIMのUnit/Service/Repository/APIテストは、対象コード変更がないため再実行していない。
+
+### 残る未検証範囲
+
+今回の試験で不合格は観測されなかった。正確な同期遅延、独立した2台の実PC間同期、障害時の復旧・停止・切断、Files On-Demand、実際の到着順・部分可視性は未検証。Windows/OneDriveの版など未取得の環境情報も残る。
+検証用プロトコルの限定結果であり、正式なCIM同期機能の保証、Phase 1全体の合格、CIMへの導入承認ではない。
